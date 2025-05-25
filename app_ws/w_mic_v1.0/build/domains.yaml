@@ -1,0 +1,7 @@
+default: w_mic_v1.0
+build_dir: D:/Andrea/Embedded/repositories/w_microphone/app_ws/w_mic_v1.0/build
+domains:
+  - name: w_mic_v1.0
+    build_dir: D:/Andrea/Embedded/repositories/w_microphone/app_ws/w_mic_v1.0/build/w_mic_v1.0
+flash_order:
+  - w_mic_v1.0

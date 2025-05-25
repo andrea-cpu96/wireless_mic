@@ -1,0 +1,46 @@
+// To get started, press Ctrl+Space to bring up the completion menu and view the available nodes.
+
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+
+// For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https: //docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
+
+/ {
+	zephyr,user {
+		io-channels = <&adc 0>; // ADC peripheral channel 0
+	};
+
+	outputs {
+		compatible = "gpio-leds";  
+		out0: out {
+			gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+			status = "okay";
+		};
+	};
+};
+
+&adc {
+	#address-cells = <1>; // Identify the number of cells (each cell is 32bits address) to identify a child node in the devicetree
+	#size-cells = <0>; // Identify the dimension of each cell (0 means no dimension, no memory is associated to an ADC channel in the devicetree)
+
+	channel@0 {
+		reg = <0>; // channel0 address inside adc node (32bit), no dimension is specified
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <NRF_SAADC_AIN0>;
+	};
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+
