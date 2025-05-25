@@ -47,8 +47,8 @@ void adc_thread(void *p1, void *p2, void *p3)
 		k_poll(&adc_event, 1, K_FOREVER);
 		k_poll_signal_reset(&adc_sig);
 		adc_data = (int16_t)(1000 * (3.6 * (adc_sample_buffer[0] / 4096.0)));
-		// printk("ADC; %d\r\n", adc_data);
-		// k_sleep(K_MSEC(100));
+		printk("ADC; %d\r\n", adc_data);
+		k_sleep(K_MSEC(100));
 	}
 }
 
@@ -107,12 +107,12 @@ static int adc_init(void)
 	hadc.adc_dev = adc;
 	hadc.adc_sig = &adc_sig;
 	hadc.data_mv = &adc_data;
-	hadc.data_buff = adc_sample_buffer;
+	hadc.data_buff = adc_sample_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
 	hadc.async = 1;
 
 	hadc.channel_cfg.gain = ADC_GAIN_1_6;
+	hadc.channel_cfg.acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 3);
 	hadc.channel_cfg.reference = ADC_REF_INTERNAL;
-	hadc.channel_cfg.acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 10);
 	hadc.channel_cfg.channel_id = ADC_CHANNEL;
 	hadc.channel_cfg.input_positive = NRF_SAADC_AIN0;
 
