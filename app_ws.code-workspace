@@ -13,7 +13,9 @@
 			"${workspaceFolder}\\app_ws\\w_mic_v1.0"
 		],
 		"files.associations": {
-			"adc_drv.h": "c"
+			"adc_drv.h": "c",
+			"printk.h": "c",
+			"pwm_drv.h": "c"
 		}
 	}
 }

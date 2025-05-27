@@ -17,12 +17,20 @@
 	};
 
 	outputs {
-		compatible = "gpio-leds";  
+		compatible = "gpio-leds";
 		out0: out {
 			gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
+
+	outputs_pwm {
+		compatible = "pwm-leds";
+		out_pwm0: out_pwm_0 {
+			pwms = <&pwm0 0 PWM_MSEC(20) PWM_POLARITY_INVERTED>;
+		};
+	};
+
 };
 
 &adc {
@@ -43,4 +51,7 @@
 	status = "okay";
 };
 
+&pwm0 {
+	status = "okay";
+};
 
