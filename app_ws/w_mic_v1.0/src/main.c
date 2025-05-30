@@ -12,8 +12,9 @@
 /* Custom peripheral drivers */
 #include "pwm_drv.h"
 #include "adc_drv.h"
+#include "audio.h"
 
-#define SIG_GENERATOR 1
+#define SIG_GENERATOR 2
 
 /* ADC definitions */
 /* Channel */
@@ -31,6 +32,9 @@
 /* Thread data structures */
 K_THREAD_STACK_DEFINE(adc_stack, ADC_STACK_SIZE);
 struct k_thread adc_tcb;
+
+/* I2S data structures */
+const struct device *const i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 
 /* ADC data structures */
 const struct device *adc = DEVICE_DT_GET(DT_NODELABEL(adc));
@@ -63,7 +67,7 @@ void adc_thread(void *p1, void *p2, void *p3)
 		k_poll_signal_reset(&adc_sig);
 		adc_data = (int16_t)(1000 * (3.6 * (adc_sample_buffer[0] / 4096.0)));
 		// printk("ADC; %d\r\n", adc_data);
-		k_sleep(K_MSEC(1));
+		// k_sleep(K_MSEC(1));
 	}
 }
 
@@ -101,7 +105,7 @@ int main(void)
 	else
 	{
 		printk("ADC OK\r\n");
-		
+
 #if (SIG_GENERATOR == 0)
 		k_thread_create(&adc_tcb, adc_stack, ADC_STACK_SIZE,
 						adc_thread,
@@ -110,8 +114,15 @@ int main(void)
 #endif
 	}
 
+	i2s_sample(i2s_dev);
+
+	k_sleep(K_MSEC(10000));
+	while (1)
+	{
+	}
+
 #if (SIG_GENERATOR == 1)
-	pwm_drv_sin_gen(50);
+	pwm_drv_sin_gen(20);
 
 	while (1)
 	{

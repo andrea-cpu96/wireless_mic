@@ -1,27 +1,26 @@
 
 
-OpenDocument="cpu_idle.c", FilePath="C:/ncs/v3.0.1/zephyr/arch/arm/core/cortex_m/cpu_idle.c", Line=85
+
+Breakpoint=C:/ncs/v3.0.1/zephyr/include/zephyr/drivers/i2s.h:485:2, State=BP_STATE_DISABLED
+Breakpoint=C:/ncs/v3.0.1/zephyr/include/zephyr/drivers/i2s.h:536:2, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio.c:78, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio.c:103:38, State=BP_STATE_DISABLED
+GraphedExpression="adc_data", DisplayFormat=DISPLAY_FORMAT_DEC, Color=#e56a6f
 OpenDocument="device.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/device.h", Line=47
-OpenDocument="adc_context.h", FilePath="C:/ncs/v3.0.1/zephyr/drivers/adc/adc_context.h", Line=220
-OpenDocument="fault_s.S", FilePath="C:/ncs/v3.0.1/zephyr/arch/arm/core/cortex_m/fault_s.S", Line=70
-OpenDocument="poll.c", FilePath="C:/ncs/v3.0.1/zephyr/kernel/poll.c", Line=265
-OpenDocument="adc_nrfx_saadc.c", FilePath="C:/ncs/v3.0.1/zephyr/drivers/adc/adc_nrfx_saadc.c", Line=521
-OpenDocument="cmsis_gcc.h", FilePath="C:/ncs/v3.0.1/modules/hal/cmsis/CMSIS/Core/Include/cmsis_gcc.h", Line=952
-OpenDocument="nrf_rtc_timer.c", FilePath="C:/ncs/v3.0.1/zephyr/drivers/timer/nrf_rtc_timer.c", Line=440
-OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/main.c", Line=18
+OpenDocument="audio.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio.c", Line=67
+OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/main.c", Line=93
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=1, w=549, h=259, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Functions", DockArea=LEFT, x=0, y=0, w=549, h=389, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=1, w=549, h=266, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=0, w=549, h=382, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 OpenWindow="Data Sampling", DockArea=BOTTOM, x=1, y=0, w=321, h=149, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
-OpenWindow="Timeline", DockArea=RIGHT, x=0, y=0, w=948, h=649, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="2 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;38", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="762;198", CodeGraphLegendShown=0, CodeGraphLegendPosition="225;52"
+OpenWindow="Timeline", DockArea=RIGHT, x=0, y=0, w=481, h=649, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="100 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="65;0", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="763;-61", CodeGraphLegendShown=0, CodeGraphLegendPosition="784;0"
 OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1378, h=149, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[1183;100;100;100;980]
+TableHeader="Data Sampling Table", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";" adc_data"], ColWidths=[100;100;100]
+TableHeader="Data Sampling Setup", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[100;100;100;100;100;100;100;101;104]
 TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
-TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
 TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[100;100;100;249]
-TableHeader="Data Sampling Table", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time"], ColWidths=[100;100]
-TableHeader="Data Sampling Setup", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[100;182;100;100;100;102;100;118;104]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
 TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;351]
-WatchedExpression="adc_data", Window=Watched Data 1
-WatchedExpression="a", Window=Watched Data 1
+WatchedExpression="adc_data", RefreshRate=5, Window=Watched Data 1

@@ -1,0 +1,5 @@
+{
+    "nrf-connect.applications": [
+        "${workspaceFolder}\\app_ws\\w_mic_v1.0"
+    ]
+}

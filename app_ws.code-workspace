@@ -10,12 +10,15 @@
 	"settings": {
 		"nrf-connect.applications": [
 			"${workspaceFolder}\\w_mic_v1.0",
-			"${workspaceFolder}\\app_ws\\w_mic_v1.0"
+			"${workspaceFolder}\\app_ws\\w_mic_v1.0",
+			"${workspaceFolder:zephyr}\\samples\\drivers\\i2s\\output"
 		],
 		"files.associations": {
 			"adc_drv.h": "c",
 			"printk.h": "c",
-			"pwm_drv.h": "c"
+			"pwm_drv.h": "c",
+			"audio.h": "c",
+			"sine.h": "c"
 		}
 	}
 }
