@@ -114,6 +114,7 @@ int main(void)
 #endif
 	}
 
+	i2s_config(i2s_dev);
 	i2s_sample(i2s_dev);
 
 	k_sleep(K_MSEC(10000));

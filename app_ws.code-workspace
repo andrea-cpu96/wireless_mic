@@ -10,8 +10,7 @@
 	"settings": {
 		"nrf-connect.applications": [
 			"${workspaceFolder}\\w_mic_v1.0",
-			"${workspaceFolder}\\app_ws\\w_mic_v1.0",
-			"${workspaceFolder:zephyr}\\samples\\drivers\\i2s\\output"
+			"${workspaceFolder}\\app_ws\\w_mic_v1.0"
 		],
 		"files.associations": {
 			"adc_drv.h": "c",
