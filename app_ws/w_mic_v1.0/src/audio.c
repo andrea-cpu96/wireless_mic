@@ -9,14 +9,14 @@
 #define VOLUME_REF (32768.0 / 10)
 
 /* Tone specs */
-#define TONE_FREQ 1000
-#define DURATION_SEC (float)1.0
+#define TONE_FREQ 500
+#define DURATION_SEC (float)3.0
 
 /* Audio specs */
-#define STEREO 1
-#define VOLUME_LEV 0
+#define STEREO 1 // MAX98357A always exspects input data in stereo format (it selects the channnel via  SD pin)
+#define VOLUME_LEV 5
 #define SAMPLE_FREQ 44100
-#define NUM_BLOCKS 100
+#define NUM_BLOCKS 4 // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers) 
 #if (STEREO == 1)
 #define CHANNELS_NUMBER 2
 #else
@@ -30,9 +30,9 @@
 #define NUM_OF_REP (uint16_t)((float)DURATION_SEC / (float)CHUNK_DURATION)
 
 /** @brief Sine wave data buffer */
-static int16_t data[SAMPLE_NO];
+static int16_t sin_data[SAMPLE_NO];
 
-#define BLOCK_SIZE (CHANNELS_NUMBER * sizeof(data))
+#define BLOCK_SIZE (CHANNELS_NUMBER * sizeof(sin_data))
 
 /** @brief Slab memory structure
  *
@@ -55,6 +55,8 @@ K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
 static void generate_sine_wave(void);
 static void fill_buf(int16_t *tx_block);
+
+void *tx_block[NUM_BLOCKS] = {0}; // Pointer to the blocks
 
 /**
  * @brief I2S configuration
@@ -98,7 +100,6 @@ int i2s_config(const struct device *dev_i2s)
  * @param dev_i2s
  * @return int
  */
-void *tx_block[NUM_BLOCKS] = {0}; // Pointer to the blocks
 int i2s_sample(const struct device *dev_i2s)
 {
     volatile uint32_t tx_idx = 0;
@@ -160,18 +161,18 @@ int i2s_sample(const struct device *dev_i2s)
 }
 
 /**
- * @brief Fill sine wave array at 1kHz for 44.1kHz sampling rate
+ * @brief Create the sinusoidal wave
  */
 static void generate_sine_wave(void)
 {
     float freq = (float)TONE_FREQ;
     float sample_rate = (float)SAMPLE_FREQ;
 
-    memset(data, 0, sizeof(data));
+    memset(sin_data, 0, sizeof(sin_data));
     for (int i = 0; i < SAMPLE_NO; i++)
     {
         float angle = 2.0f * PI * freq * ((float)i / sample_rate);
-        data[i] = (int16_t)((float)AMPLITUDE * sinf(angle));
+        sin_data[i] = (int16_t)((float)AMPLITUDE * sinf(angle));
     }
 }
 
@@ -186,11 +187,15 @@ static void fill_buf(int16_t *tx_block)
     for (int i = 0; i < SAMPLE_NO; i++)
     {
 #if (STEREO == 1)
-        tx_block[2 * i] = data[i]; // Left channel
+        tx_block[2 * i] = sin_data[i]; // Left channel
+        tx_block[2 * i + 1] = 0;   // Right channel
+#if (0)
+        /* Fake right channel */
         int r_idx = (i + SAMPLE_NO / 4) % SAMPLE_NO;
-        tx_block[2 * i + 1] = data[r_idx]; // Right channel (90° shifted)
+        tx_block[2 * i + 1] = sin_data[r_idx]; // Right channel (90° shifted)
+#endif
 #else
-        tx_block[i] = data[i]; // Left channel
+        tx_block[i] = sin_data[i]; // Left channel
 #endif
     }
 }

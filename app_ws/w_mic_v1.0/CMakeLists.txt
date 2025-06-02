@@ -13,6 +13,7 @@ target_sources(app PRIVATE
   src/pwm_drv.c
   src/adc_drv.c
   src/audio.c
+  #src/adc_cont_samp.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/src)

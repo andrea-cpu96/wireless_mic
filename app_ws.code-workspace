@@ -17,7 +17,9 @@
 			"printk.h": "c",
 			"pwm_drv.h": "c",
 			"audio.h": "c",
-			"sine.h": "c"
+			"sine.h": "c",
+			"adc_context.h": "c",
+			"adc_cont_samp.h": "c"
 		}
 	}
 }

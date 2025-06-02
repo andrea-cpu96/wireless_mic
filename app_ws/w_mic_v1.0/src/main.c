@@ -6,9 +6,6 @@
 #include <zephyr/sys/printk.h>
 /* Zephyr peripheral drivers */
 #include <zephyr/drivers/gpio.h>
-/* nrf peripheral drivers */
-#include <nrfx_timer.h>
-#include <nrfx_dppi.h>
 /* Custom peripheral drivers */
 #include "pwm_drv.h"
 #include "adc_drv.h"
@@ -24,10 +21,6 @@
 /* Thread */
 #define ADC_STACK_SIZE 1024
 #define ADC_PRIORITY 7
-
-/* PWM definitions */
-#define PWM_FREQ_KHZ 100
-#define PWM_PERIOD PWM_USEC(1U * (1000 / PWM_FREQ_KHZ))
 
 /* Thread data structures */
 K_THREAD_STACK_DEFINE(adc_stack, ADC_STACK_SIZE);
@@ -54,6 +47,7 @@ static const struct gpio_dt_spec out = GPIO_DT_SPEC_GET(DT_NODELABEL(out0), gpio
 
 /* Static function prototypes */
 static int adc_init(void);
+static int periph_config(void);
 
 /**
  * @brief adc_thread
@@ -62,7 +56,7 @@ void adc_thread(void *p1, void *p2, void *p3)
 {
 	while (1)
 	{
-		adc_drv_read(hadc);
+		adc_drv_read(&hadc);
 		k_poll(&adc_event, 1, K_FOREVER);
 		k_poll_signal_reset(&adc_sig);
 		adc_data = (int16_t)(1000 * (3.6 * (adc_sample_buffer[0] / 4096.0)));
@@ -78,10 +72,81 @@ void adc_thread(void *p1, void *p2, void *p3)
  */
 int main(void)
 {
+	if (periph_config() < 0)
+	{
+		printk("Error\n");
+		return 1;
+	}
+
+#if (SIG_GENERATOR == 1)
+	pwm_drv_sin_gen(500);
+
+	while (1)
+	{
+		pwm_drv_sig_out(&out_pwm);
+	}
+#else
+
+/*
+	k_thread_create(&adc_tcb, adc_stack, ADC_STACK_SIZE,
+					adc_thread,
+					NULL, NULL, NULL,
+					ADC_PRIORITY, 0, K_NO_WAIT);
+*/
+	// i2s_config(i2s_dev);
+	// i2s_sample(i2s_dev);
+
+	k_sleep(K_FOREVER);
+	while (1)
+	{
+	}
+#endif
+
+	return 1;
+}
+
+
+int16_t adc_buffer[2][10];
+ 
+/**
+ * @brief adc_init
+ *
+ * @return int
+ */
+static int adc_init(void)
+{
+	hadc.mode = ADC_DRV_ASYNC_CONT;
+	hadc.opt.adv_settings.adv_default = 1;
+	hadc.opt.adv_settings.buffer_config.buffer = &adc_buffer[0][0];
+	hadc.opt.adv_settings.buffer_config.buffers_number = 2;
+	hadc.opt.adv_settings.buffer_config.buffer_size = 10;
+	//hadc.opt.adv_settings.saadc_event_handler;
+#ifdef CONFIG_ADC
+	k_poll_signal_init(&adc_sig);
+
+	hadc.adc_dev = adc;
+	hadc.channel_cfg.gain = ADC_GAIN_1_6;
+	hadc.channel_cfg.acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 3);
+	hadc.channel_cfg.reference = ADC_REF_INTERNAL;
+	hadc.channel_cfg.channel_id = ADC_CHANNEL;
+	hadc.channel_cfg.input_positive = NRF_SAADC_AIN0;
+
+	hadc.sequence.channels = BIT(ADC_CHANNEL);
+	hadc.sequence.buffer = adc_sample_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
+	hadc.sequence.buffer_size = sizeof(adc_sample_buffer);
+	hadc.sequence.resolution = ADC_RESOLUTION;
+
+	hadc.opt.adc_sig = &adc_sig;
+#endif
+	return adc_drv_config(&hadc);
+}
+
+static int periph_config(void)
+{
 	if (!gpio_is_ready_dt(&out))
 	{
 		printk("Error: PWM device is not ready\n");
-		return 1;
+		return -1;
 	}
 
 	if (gpio_pin_configure_dt(&out, GPIO_OUTPUT_ACTIVE) != 0)
@@ -94,71 +159,15 @@ int main(void)
 	if (pwm_drv_config(&out_pwm) < 0)
 	{
 		printk("Error: PWM device is not ready\n");
-		return 1;
+		return -1;
 	}
-#endif
-
+#else
 	if (adc_init() < 0)
 	{
-		printk("ADC device not ready\r\n");
-	}
-	else
-	{
-		printk("ADC OK\r\n");
-
-#if (SIG_GENERATOR == 0)
-		k_thread_create(&adc_tcb, adc_stack, ADC_STACK_SIZE,
-						adc_thread,
-						NULL, NULL, NULL,
-						ADC_PRIORITY, 0, K_NO_WAIT);
-#endif
-	}
-
-	i2s_config(i2s_dev);
-	i2s_sample(i2s_dev);
-
-	k_sleep(K_MSEC(10000));
-	while (1)
-	{
-	}
-
-#if (SIG_GENERATOR == 1)
-	pwm_drv_sin_gen(20);
-
-	while (1)
-	{
-		pwm_drv_sig_out(&out_pwm);
+		printk("Error: ADC device not ready\r\n");
+		return -1;
 	}
 #endif
 
-	return 1;
-}
-
-/**
- * @brief adc_init
- *
- * @return int
- */
-static int adc_init(void)
-{
-	k_poll_signal_init(&adc_sig);
-
-	hadc.adc_dev = adc;
-	hadc.adc_sig = &adc_sig;
-	hadc.data_mv = &adc_data;
-	hadc.data_buff = adc_sample_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
-	hadc.async = 1;
-
-	hadc.channel_cfg.gain = ADC_GAIN_1_6;
-	hadc.channel_cfg.acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 3);
-	hadc.channel_cfg.reference = ADC_REF_INTERNAL;
-	hadc.channel_cfg.channel_id = ADC_CHANNEL;
-	hadc.channel_cfg.input_positive = NRF_SAADC_AIN0;
-
-	hadc.sequence.channels = BIT(ADC_CHANNEL);
-	hadc.sequence.buffer = adc_sample_buffer;
-	hadc.sequence.buffer_size = sizeof(adc_sample_buffer);
-	hadc.sequence.resolution = ADC_RESOLUTION;
-
-	return adc_drv_config(hadc);
+	return 0;
 }
