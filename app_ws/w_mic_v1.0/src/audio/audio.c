@@ -1,8 +1,22 @@
-#include <stdio.h>
-#include <math.h>
+/**
+ * @file audio.c
+ * @author Andrea Fato
+ * @date 2025-06-03
+ * @brief Provides a library audio applicaitons.
+ *
+ * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
+ */
+
+/* System */
 #include <zephyr/kernel.h>
 #include <zephyr/sys/iterable_sections.h>
 #include <zephyr/drivers/i2s.h>
+/* Standard C libraries */
+#include <stdio.h>
+/* Support */
+#include <math.h>
+
+#include "audio.h"
 
 /* Constants */
 #define PI (float)3.14159265
@@ -16,7 +30,7 @@
 #define STEREO 1 // MAX98357A always exspects input data in stereo format (it selects the channnel via  SD pin)
 #define VOLUME_LEV 5
 #define SAMPLE_FREQ 44100
-#define NUM_BLOCKS 4 // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers) 
+#define NUM_BLOCKS 4 // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers)
 #if (STEREO == 1)
 #define CHANNELS_NUMBER 2
 #else
@@ -188,7 +202,7 @@ static void fill_buf(int16_t *tx_block)
     {
 #if (STEREO == 1)
         tx_block[2 * i] = sin_data[i]; // Left channel
-        tx_block[2 * i + 1] = 0;   // Right channel
+        tx_block[2 * i + 1] = 0;       // Right channel
 #if (0)
         /* Fake right channel */
         int r_idx = (i + SAMPLE_NO / 4) % SAMPLE_NO;

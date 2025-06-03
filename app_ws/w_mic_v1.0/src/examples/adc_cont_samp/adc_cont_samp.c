@@ -1,6 +1,15 @@
+/**
+ * @file adc_cont_samp.c
+ * @author Andrea Fato
+ * @date 2025-06-03
+ * @brief Provides an example of how to implement ADC continuos sampling.
+ *
+ * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
+ */
+
+/* System */
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
-
 /* Include header for nrfx drivers */
 #include <nrfx_saadc.h>
 #include <nrfx_timer.h>
@@ -52,28 +61,28 @@ static void saadc_event_handler(nrfx_saadc_evt_t const *p_event)
         break;
 
     case NRFX_SAADC_EVT_DONE: // A buffer has been filled
-/*
-        // Mesure the average ADC value inside the buffer 
-        int16_t max = INT16_MIN;
-        int16_t min = INT16_MAX;
-        int16_t current_value;
-        for (int i = 0; i < p_event->data.done.size; i++)
-        {
-            current_value = ((int16_t *)(p_event->data.done.p_buffer))[i];
-            average += current_value;
-            if (current_value > max)
-            {
-                max = current_value;
-            }
-            if (current_value < min)
-            {
-                min = current_value;
-            }
-        }
-        average = average / p_event->data.done.size;
-        printk("ADC; average = %d\r\n", average);
-        break;
-        */
+                              /*
+                                      // Mesure the average ADC value inside the buffer
+                                      int16_t max = INT16_MIN;
+                                      int16_t min = INT16_MAX;
+                                      int16_t current_value;
+                                      for (int i = 0; i < p_event->data.done.size; i++)
+                                      {
+                                          current_value = ((int16_t *)(p_event->data.done.p_buffer))[i];
+                                          average += current_value;
+                                          if (current_value > max)
+                                          {
+                                              max = current_value;
+                                          }
+                                          if (current_value < min)
+                                          {
+                                              min = current_value;
+                                          }
+                                      }
+                                      average = average / p_event->data.done.size;
+                                      printk("ADC; average = %d\r\n", average);
+                                      break;
+                                      */
     default:
         printk("ADC; event error\r\n");
         break;

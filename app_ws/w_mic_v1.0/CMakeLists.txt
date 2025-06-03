@@ -10,12 +10,16 @@ project(NONE)
 
 target_sources(app PRIVATE
   src/main.c
-  src/pwm_drv.c
-  src/adc_drv.c
-  src/audio.c
-  #src/adc_cont_samp.c
+  src/pwm_drv/pwm_drv.c
+  src/adc_drv/adc_drv.c
+  src/audio/audio.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
-zephyr_library_include_directories(.)
+zephyr_library_include_directories(
+  ./
+  src/pwm_drv/
+  src/adc_drv/
+  src/audio/
+  )

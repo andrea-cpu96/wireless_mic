@@ -1,23 +1,26 @@
 
 
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/adc_drv.c:86, State=BP_STATE_ON
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/device.h:57:2, Permitted Impl.=BP_TYPE_MIXED, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/adc_drv.c:56, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/adc_drv.c:86, State=BP_STATE_DISABLED
 Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/main.c:62, State=BP_STATE_DISABLED
+OpenDocument="soc.c", FilePath="C:/ncs/v3.0.1/zephyr/soc/nordic/nrf53/soc.c", Line=97
+OpenDocument="nrfx_saadc.c", FilePath="C:/ncs/v3.0.1/modules/hal/nordic/nrfx/drivers/src/nrfx_saadc.c", Line=753
+OpenDocument="nrf_rtc.h", FilePath="C:/ncs/v3.0.1/modules/hal/nordic/nrfx/hal/nrf_rtc.h", Line=395
 OpenDocument="device.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/device.h", Line=47
-OpenDocument="adc_drv.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/adc_drv.c", Line=123
+OpenDocument="adc_drv.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/adc_drv.c", Line=27
 OpenDocument="audio.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio.c", Line=132
 OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/main.c", Line=100
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=481, h=223, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=483, h=191, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=0
-OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=2, w=483, h=351, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=483, h=105, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Data Sampling", DockArea=BOTTOM, x=1, y=0, w=400, h=149, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
-OpenWindow="Timeline", DockArea=RIGHT, x=0, y=1, w=481, h=425, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="1 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;257", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="610;-61", CodeGraphLegendShown=0, CodeGraphLegendPosition="631;0"
-OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1299, h=149, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=481, h=235, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=483, h=224, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=2, w=483, h=317, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=483, h=123, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Data Sampling", DockArea=BOTTOM, x=1, y=0, w=400, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
+OpenWindow="Timeline", DockArea=RIGHT, x=0, y=1, w=481, h=430, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="1 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;271", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="296;-61", CodeGraphLegendShown=0, CodeGraphLegendPosition="317;0"
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1299, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;500]
-TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;385;497]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;385;518]
 TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[1183;100;100;100;980]
 TableHeader="Data Sampling Table", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time"], ColWidths=[100;100]
 TableHeader="Data Sampling Setup", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[100;100;100;100;100;100;100;101;104]

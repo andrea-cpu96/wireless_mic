@@ -1,11 +1,23 @@
+/**
+ * @file adc_drv.h
+ * @author Andrea Fato
+ * @date 2025-06-03
+ * @brief Provides an interface to the ADC peripheral.
+ *
+ * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
+ */
+
+#ifndef ADC_DRV
+#define ADC_DRV
+
 /* System */
 #include <zephyr/kernel.h>
-
-/* Peripheral drivers */
+/* Zephyr peripheral drivers */
 #ifdef CONFIG_ADC
 #include <zephyr/drivers/adc.h>
 #include <zephyr/dt-bindings/adc/nrf-saadc.h>
 #endif
+/* Nordic peripheral drivers */
 #ifdef CONFIG_NRFX_SAADC
 #include <nrfx_saadc.h>
 #endif
@@ -26,7 +38,7 @@ typedef enum ADC_DRV_MODE
 
 typedef struct
 {
-#if CONFIG_NRFX_TIMER2
+#if CONFIG_NRFX_TIMER
     // const nrfx_timer_t *timer_instance;
 #endif
 } adc_drv_adv_timer_settings_t;
@@ -75,3 +87,5 @@ typedef struct
 
 int adc_drv_config(adc_handler_t *adc_handler);
 int adc_drv_read(adc_handler_t *adc_handler);
+
+#endif /* ADC_DRV */

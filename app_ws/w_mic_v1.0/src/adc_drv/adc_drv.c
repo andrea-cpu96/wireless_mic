@@ -1,8 +1,17 @@
+/**
+ * @file adc_drv.c
+ * @author Andrea Fato
+ * @date 2025-06-03
+ * @brief Provides an interface to the ADC peripheral.
+ *
+ * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
+ */
+
 /* System */
 #include <zephyr/devicetree.h>
 #include <zephyr/device.h>
-
-#if CONFIG_NRFX_TIMER2 /** TODO should be configurable the timer */
+/* Zephyr peripheral drivers */
+#if CONFIG_NRFX_TIMER
 #include <nrfx_timer.h>
 #endif
 #ifdef CONFIG_NRFX_GPPI
@@ -19,7 +28,7 @@
 #define SAADC_SAMPLE_INTERVAL_US 5
 #define TIMER_INSTANCE_NUMBER 2
 
-#if CONFIG_NRFX_TIMER2 /** TODO should be configurable the timer */
+#if CONFIG_NRFX_TIMER
 /** TODO
  * Hardwired
  */
@@ -29,7 +38,7 @@ const nrfx_timer_t timer_instance = NRFX_TIMER_INSTANCE(TIMER_INSTANCE_NUMBER); 
 #ifndef CONFIG_ADC
 static int adc_drv_adv_config(adc_handler_t *adc_handler);
 #endif
-#ifdef CONFIG_NRFX_TIMER2
+#ifdef CONFIG_NRFX_TIMER
 static int adc_drv_adv_timer_config(void);
 #endif
 #ifdef CONFIG_NRFX_GPPI
@@ -80,7 +89,9 @@ int adc_drv_config(adc_handler_t *adc_handler)
 	}
 
 	adc_channel_setup(adc_handler->adc_dev, &adc_handler->channel_cfg);
-#else
+
+	return 0;
+#elif defined CONFIG_NRFX_SAADC
 	if (adc_handler->mode == ADC_DRV_ASYNC_CONT)
 	{
 		saadc_buffer = &adc_handler->opt.adv_settings.buffer_config;
@@ -89,6 +100,11 @@ int adc_drv_config(adc_handler_t *adc_handler)
 		adc_drv_adv_config(adc_handler);
 		adc_drv_adv_ppi_configure();
 	}
+
+	return 0;
+#else
+
+	return -1;
 #endif
 
 	return 0;
@@ -116,6 +132,7 @@ int adc_drv_read(adc_handler_t *adc_handler)
 #endif
 		break;
 	case ADC_DRV_ASYNC_CONT:
+		return -1;
 		break;
 	default:
 		return -1;
@@ -129,21 +146,6 @@ int adc_drv_read(adc_handler_t *adc_handler)
 static int adc_drv_adv_config(adc_handler_t *adc_handler)
 {
 	nrfx_err_t err;
-
-	/* Connect ADC interrupt to nrfx interrupt handler */
-	/** TODO
-	 *  DT_NODELABEL(adc) too specific
-	 */
-	IRQ_CONNECT(DT_IRQN(DT_NODELABEL(adc)),			  // Extract irq number
-				DT_IRQ(DT_NODELABEL(adc), priority),  // Extract irq priority
-				nrfx_isr, nrfx_saadc_irq_handler, 0); // Connect the interrupt to the nrf interrupt handler
-
-	err = nrfx_saadc_init(DT_IRQ(DT_NODELABEL(adc), priority)); /** TODO DT_NODELABEL(adc) too specific */
-	if (err != NRFX_SUCCESS)
-	{
-		printk("ADC; init error\r\n");
-		return -1;
-	}
 
 	nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(NRF_SAADC_INPUT_AIN0, 0);
 	err = nrfx_saadc_channels_config(&channel, 1);
@@ -177,10 +179,10 @@ static int adc_drv_adv_config(adc_handler_t *adc_handler)
 
 	for (int i = 0; i < adc_handler->opt.adv_settings.buffer_config.buffers_number; i++)
 	{
-		err = nrfx_saadc_buffer_set(&adc_handler->opt.adv_settings.buffer_config.buffer[i*adc_handler->opt.adv_settings.buffer_config.buffer_size], adc_handler->opt.adv_settings.buffer_config.buffer_size);
+		err = nrfx_saadc_buffer_set(&adc_handler->opt.adv_settings.buffer_config.buffer[i * adc_handler->opt.adv_settings.buffer_config.buffer_size], adc_handler->opt.adv_settings.buffer_config.buffer_size);
 		if (err != NRFX_SUCCESS)
 		{
-			printk("ADC; buffer set error\r\n"); 
+			printk("ADC; buffer set error\r\n");
 			return -1;
 		}
 	}
@@ -197,7 +199,7 @@ static int adc_drv_adv_config(adc_handler_t *adc_handler)
 }
 #endif
 
-#ifdef CONFIG_NRFX_TIMER2 /** TODO should be configurable the timer*/
+#ifdef CONFIG_NRFX_TIMER
 static int adc_drv_adv_timer_config(void)
 {
 	/** TODO

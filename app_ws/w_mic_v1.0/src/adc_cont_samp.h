@@ -1,1 +1,0 @@
-void adc_continuos_sampling_sample(void);

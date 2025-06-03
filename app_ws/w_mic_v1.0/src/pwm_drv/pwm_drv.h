@@ -1,6 +1,17 @@
+/**
+ * @file pwm_drv.h
+ * @author Andrea Fato
+ * @date 2025-06-03
+ * @brief Provides an interface to the PWM peripheral.
+ *
+ * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
+ */
+
+#ifndef PWM_DRV
+#define PWM_DRV
+
 /* System */
 #include <zephyr/kernel.h>
-
 /* Peripheral drivers */
 #include <zephyr/drivers/pwm.h>
 /* Standard C libraries */
@@ -33,3 +44,5 @@ static inline void pwm_drv_sig_out(const struct pwm_dt_spec *pwm)
         __asm__ volatile("nop");
     }
 }
+
+#endif /* PWM_DRV */

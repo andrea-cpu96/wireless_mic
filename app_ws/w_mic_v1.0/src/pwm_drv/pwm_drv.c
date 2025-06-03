@@ -1,8 +1,18 @@
+/**
+ * @file pwm_drv.c
+ * @author Andrea Fato
+ * @date 2025-06-03
+ * @brief Provides an interface to the PWM peripheral.
+ *
+ * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
+ */
+
 /* System */
 #include <zephyr/devicetree.h>
 #include <zephyr/device.h>
-
+/* Support */
 #include <math.h>
+
 #include "pwm_drv.h"
 
 #define PI 3.14159

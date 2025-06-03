@@ -87,12 +87,12 @@ int main(void)
 	}
 #else
 
-/*
-	k_thread_create(&adc_tcb, adc_stack, ADC_STACK_SIZE,
-					adc_thread,
-					NULL, NULL, NULL,
-					ADC_PRIORITY, 0, K_NO_WAIT);
-*/
+	/*
+		k_thread_create(&adc_tcb, adc_stack, ADC_STACK_SIZE,
+						adc_thread,
+						NULL, NULL, NULL,
+						ADC_PRIORITY, 0, K_NO_WAIT);
+	*/
 	// i2s_config(i2s_dev);
 	// i2s_sample(i2s_dev);
 
@@ -105,9 +105,8 @@ int main(void)
 	return 1;
 }
 
-
 int16_t adc_buffer[2][10];
- 
+
 /**
  * @brief adc_init
  *
@@ -115,13 +114,27 @@ int16_t adc_buffer[2][10];
  */
 static int adc_init(void)
 {
+#ifdef CONFIG_NRFX_SAADC
+	int err; 
+	/* Connect ADC interrupt to nrfx interrupt handler */
+	IRQ_CONNECT(DT_IRQN(DT_NODELABEL(adc)),			  // Extract irq number
+				DT_IRQ(DT_NODELABEL(adc), priority),  // Extract irq priority
+				nrfx_isr, nrfx_saadc_irq_handler, 0); // Connect the interrupt to the nrf interrupt handler
+
+	err = nrfx_saadc_init(DT_IRQ(DT_NODELABEL(adc), priority));
+	if (err != NRFX_SUCCESS)
+	{
+		printk("ADC; init error\r\n");
+		return -1;
+	}
+
 	hadc.mode = ADC_DRV_ASYNC_CONT;
 	hadc.opt.adv_settings.adv_default = 1;
 	hadc.opt.adv_settings.buffer_config.buffer = &adc_buffer[0][0];
 	hadc.opt.adv_settings.buffer_config.buffers_number = 2;
 	hadc.opt.adv_settings.buffer_config.buffer_size = 10;
-	//hadc.opt.adv_settings.saadc_event_handler;
-#ifdef CONFIG_ADC
+	// hadc.opt.adv_settings.saadc_event_handler;
+#else
 	k_poll_signal_init(&adc_sig);
 
 	hadc.adc_dev = adc;
