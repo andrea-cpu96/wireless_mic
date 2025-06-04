@@ -15,19 +15,14 @@
 /* Zephyr peripheral drivers */
 #ifdef CONFIG_ADC
 #include <zephyr/drivers/adc.h>
-#include <zephyr/dt-bindings/adc/nrf-saadc.h>
 #endif
 /* Nordic peripheral drivers */
 #ifdef CONFIG_NRFX_SAADC
-#include <nrfx_saadc.h>
+#include "nrf_adc_drv.h"
 #endif
 /* Standard C libraries */
 #include <stdint.h>
 #include <stdbool.h>
-
-#ifndef CONFIG_ADC
-typedef void (*saadc_event_handler_t)(nrfx_saadc_evt_t const *p_event);
-#endif
 
 typedef enum ADC_DRV_MODE
 {
@@ -38,19 +33,6 @@ typedef enum ADC_DRV_MODE
 
 typedef struct
 {
-#if CONFIG_NRFX_TIMER
-    // const nrfx_timer_t *timer_instance;
-#endif
-} adc_drv_adv_timer_settings_t;
-
-typedef struct
-{
-    uint8_t m_saadc_sample_ppi_channel;
-    uint8_t m_saadc_start_ppi_channel;
-} adc_drv_adv_ppi_settings_t;
-
-typedef struct
-{
     int16_t *buffer;
     uint8_t buffers_number;
     uint16_t buffer_size;
@@ -58,9 +40,9 @@ typedef struct
 
 typedef struct
 {
+#ifdef CONFIG_NRFX_SAADC
     adc_drv_adv_timer_settings_t timer;
     adc_drv_adv_ppi_settings_t ppi;
-#ifndef CONFIG_ADC
     nrfx_saadc_adv_config_t saadc;
     saadc_event_handler_t saadc_event_handler;
 #endif

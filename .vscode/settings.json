@@ -1,5 +1,8 @@
 {
     "nrf-connect.applications": [
         "${workspaceFolder}\\app_ws\\w_mic_v1.0"
-    ]
+    ],
+    "files.associations": {
+        "nrf_adc_drv.h": "c"
+    }
 }
