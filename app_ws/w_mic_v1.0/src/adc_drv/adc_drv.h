@@ -33,27 +33,7 @@ typedef enum ADC_DRV_MODE
 
 typedef struct
 {
-    int16_t *buffer;
-    uint8_t buffers_number;
-    uint16_t buffer_size;
-} adc_drv_adv_buffer_settings_t;
-
-typedef struct
-{
-#ifdef CONFIG_NRFX_SAADC
-    adc_drv_adv_timer_settings_t timer;
-    adc_drv_adv_ppi_settings_t ppi;
-    nrfx_saadc_adv_config_t saadc;
-    saadc_event_handler_t saadc_event_handler;
-#endif
-    adc_drv_adv_buffer_settings_t buffer_config;
-    bool adv_default;
-} adc_drv_adv_settings_t;
-
-typedef struct
-{
     struct k_poll_signal *adc_sig;
-    adc_drv_adv_settings_t adv_settings;
 } adc_drv_options_t;
 
 typedef struct
@@ -62,6 +42,9 @@ typedef struct
 #ifdef CONFIG_ADC
     struct adc_channel_cfg channel_cfg; // ADC channel configurations
     struct adc_sequence sequence;       // ADC global configurations (buffer, resolution, channel reference)
+#endif
+#ifdef CONFIG_NRFX_SAADC
+    nrf_saadc_setting_t nrf_saadc_config;
 #endif
     adc_drv_mode_t mode;
     adc_drv_options_t opt;
