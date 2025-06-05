@@ -10,19 +10,12 @@
 #ifndef ADC_DRV
 #define ADC_DRV
 
-/* System */
-#include <zephyr/kernel.h>
 /* Zephyr peripheral drivers */
-#ifdef CONFIG_ADC
 #include <zephyr/drivers/adc.h>
-#endif
 /* Nordic peripheral drivers */
 #ifdef CONFIG_NRFX_SAADC
 #include "nrf_adc_drv.h"
 #endif
-/* Standard C libraries */
-#include <stdint.h>
-#include <stdbool.h>
 
 typedef enum ADC_DRV_MODE
 {

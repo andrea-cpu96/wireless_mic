@@ -1,6 +1,7 @@
 /* Debug support */
 #include <zephyr/sys/printk.h>
 
+#include <zephyr/drivers/adc.h>
 #include "nrf_adc_drv.h"
 
 #define SAADC_SAMPLE_INTERVAL_US_DEFAULT 5
@@ -12,7 +13,7 @@ nrfx_timer_t timer_instance_default = NRFX_TIMER_INSTANCE(TIMER_INSTANCE_NUMBER_
 nrfx_timer_t *timer_instance;
 /* Timer frequency */
 nrfx_timer_config_t timer_config_default = NRFX_TIMER_DEFAULT_CONFIG(1000000);
-nrfx_timer_config_t *timer_config;
+nrfx_timer_config_t *timer_config; 
 #endif
 
 /**
@@ -24,7 +25,7 @@ nrfx_timer_config_t *timer_config;
 static int adc_drv_adv_config(nrf_saadc_setting_t *adc_handler);
 #endif
 #ifdef CONFIG_NRFX_TIMER
-static int adc_drv_adv_timer_config(adc_drv_adv_timer_setting_t timer);
+static int adc_drv_adv_timer_config(adc_drv_adv_timer_setting_t *timer);
 #endif
 #ifdef CONFIG_NRFX_GPPI
 static int adc_drv_adv_ppi_configure(void);
@@ -33,7 +34,7 @@ static int adc_drv_adv_ppi_configure(void);
 void nrf_adc_drv_continuous(nrf_saadc_setting_t *adc_handler)
 {
 #ifdef CONFIG_NRFX_TIMER
-	adc_drv_adv_timer_config(adc_handler->timer);
+	adc_drv_adv_timer_config(&adc_handler->timer);
 #endif
 	adc_drv_adv_config(adc_handler);
 	adc_drv_adv_ppi_configure();
@@ -43,7 +44,12 @@ static int adc_drv_adv_config(nrf_saadc_setting_t *adc_handler)
 {
 	nrfx_err_t err;
 
-	nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(adc_handler->saadc_ch.pin_p, 0);
+	/**
+	 * TODO
+	 * personal settings
+	 */
+	nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(adc_handler->saadc_ch.pin_p, 0); // Channel 0 default 
+	channel.channel_config.gain = adc_handler->saadc_ch.channel_config.gain;
 	err = nrfx_saadc_channels_config(&channel, 1); /** TODO configure number of channels */
 	if (err != NRFX_SUCCESS)
 	{
@@ -55,14 +61,14 @@ static int adc_drv_adv_config(nrf_saadc_setting_t *adc_handler)
 	{
 		nrfx_saadc_adv_config_t saadc_adv_config = NRFX_SAADC_DEFAULT_ADV_CONFIG;
 		err = nrfx_saadc_advanced_mode_set(BIT(0),
-										   12, /** TODO should be configurable */
+										   NRF_SAADC_RESOLUTION_12BIT, /** TODO should be configurable */
 										   &saadc_adv_config,
 										   adc_handler->saadc_event_handler); // If NULL it will work in blocking mode
 	}
 	else
 	{
 		err = nrfx_saadc_advanced_mode_set(BIT(0),
-										   12, /** TODO should be configurable */
+										   NRF_SAADC_RESOLUTION_12BIT, /** TODO should be configurable */
 										   &adc_handler->saadc,
 										   adc_handler->saadc_event_handler); // If NULL it will work in blocking mode
 	}
@@ -95,24 +101,24 @@ static int adc_drv_adv_config(nrf_saadc_setting_t *adc_handler)
 }
 
 #ifdef CONFIG_NRFX_TIMER
-static int adc_drv_adv_timer_config(adc_drv_adv_timer_setting_t timer)
+static int adc_drv_adv_timer_config(adc_drv_adv_timer_setting_t *timer)
 {
 	nrfx_err_t err;
 
-	if (timer.timer_instance == NULL)
+	if (timer->timer_instance == NULL)
 	{
 		timer_instance = &timer_instance_default; // Timer 2 instance
 		timer_config = &timer_config_default;	  // Timer frequency
-		timer.timer_instance = timer_instance;
+		timer->timer_instance = timer_instance;
 	}
 	else
 	{
-		timer_instance = timer.timer_instance; // Timer instance
-		timer_config = timer.timer_config;	   // Timer frequency
+		timer_instance = timer->timer_instance; // Timer instance
+		timer_config = timer->timer_config;	   // Timer frequency
 	}
 
 	err = nrfx_timer_init(timer_instance, timer_config, NULL); // The third parameter is the reference to the event handler (NULL if none)
-	if (err != NRFX_SUCCESS)
+	if (err != NRFX_SUCCESS) 
 	{
 		printk("TIMER; init error\r\n");
 		return -1;
@@ -122,7 +128,7 @@ static int adc_drv_adv_timer_config(adc_drv_adv_timer_setting_t timer)
 	 * TODO
 	 * channel 0 is hardwired
 	 */
-	uint32_t timer_ticks = nrfx_timer_us_to_ticks(timer_instance, timer.saadc_sampling_time);
+	uint32_t timer_ticks = nrfx_timer_us_to_ticks(timer_instance, timer->saadc_sampling_time);
 	nrfx_timer_extended_compare(timer_instance, NRF_TIMER_CC_CHANNEL0, timer_ticks, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false); // Compare the timer value with the number of ticks passed and creates an event, also specify an action (reset the timer)
 
 	return 0;
