@@ -18,26 +18,15 @@
 #define ADC_CHANNEL 0
 #define ADC_RESOLUTION 12
 #define ADC_BUFFER_SIZE 512
-/* Thread */
-#define ADC_STACK_SIZE 1024
-#define ADC_PRIORITY 7
-
-/* Thread data structures */
-K_THREAD_STACK_DEFINE(adc_stack, ADC_STACK_SIZE);
-struct k_thread adc_tcb;
 
 /* I2S data structures */
 const struct device *const i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 
 /* ADC data structures */
 const struct device *adc = DEVICE_DT_GET(DT_NODELABEL(adc));
-struct k_poll_signal adc_sig;
-struct k_poll_event adc_event = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL,
-														 K_POLL_MODE_NOTIFY_ONLY,
-														 &adc_sig);
 adc_handler_t hadc;
-static int16_t adc_sample_buffer[ADC_BUFFER_SIZE];
-int16_t adc_data;
+int16_t adc_buffer[2][10];
+adc_drv_adv_buffer_setting_t *saadc_buffer = &hadc.nrf_saadc_config.buffer_config;
 
 /* PWM data structure */
 const struct pwm_dt_spec out_pwm = PWM_DT_SPEC_GET(DT_NODELABEL(out_pwm0));
@@ -49,12 +38,6 @@ static const struct gpio_dt_spec out = GPIO_DT_SPEC_GET(DT_NODELABEL(out0), gpio
 static int adc_init(void);
 static int periph_config(void);
 
-#ifndef CONFIG_ADC
-int16_t adc_buffer[2][10];
-adc_drv_adv_buffer_setting_t *saadc_buffer = &hadc.nrf_saadc_config.buffer_config;
-#endif
-
-#ifndef CONFIG_ADC
 static void saadc_event_handler(nrfx_saadc_evt_t const *p_event)
 {
 	static uint32_t saadc_current_buffer = 0;
@@ -87,28 +70,6 @@ static void saadc_event_handler(nrfx_saadc_evt_t const *p_event)
 		break;
 	}
 }
-#endif
-
-/**
- * @brief adc_thread
- */
-
- /**
-  * TODO
-  * should be an example 
-  */
-void adc_thread(void *p1, void *p2, void *p3)
-{
-	while (1)
-	{
-		adc_drv_read(&hadc);
-		k_poll(&adc_event, 1, K_FOREVER);
-		k_poll_signal_reset(&adc_sig);
-		adc_data = (int16_t)(1000 * (3.6 * (adc_sample_buffer[0] / 4096.0)));
-		// printk("ADC; %d\r\n", adc_data);
-		// k_sleep(K_MSEC(1));
-	}
-}
 
 /**
  * @brief main
@@ -132,12 +93,6 @@ int main(void)
 	}
 #else
 
-	/*
-		k_thread_create(&adc_tcb, adc_stack, ADC_STACK_SIZE,
-						adc_thread,
-						NULL, NULL, NULL,
-						ADC_PRIORITY, 0, K_NO_WAIT);
-	*/
 	// i2s_config(i2s_dev);
 	// i2s_sample(i2s_dev);
 
@@ -157,7 +112,6 @@ int main(void)
  */
 static int adc_init(void)
 {
-#ifndef CONFIG_ADC
 	int err;
 	/* Connect ADC interrupt to nrfx interrupt handler */
 	IRQ_CONNECT(DT_IRQN(DT_NODELABEL(adc)),			  // Extract irq number
@@ -173,7 +127,7 @@ static int adc_init(void)
 
 	hadc.mode = ADC_DRV_ASYNC_CONT;
 	hadc.nrf_saadc_config.adv_default = 1;
-	hadc.nrf_saadc_config.buffer_config.buffer = &adc_buffer[0][0];
+	hadc.nrf_saadc_config.buffer_config.buffer = &adc_buffer[0][0]; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
 	hadc.nrf_saadc_config.buffer_config.buffers_number = 2;
 	hadc.nrf_saadc_config.buffer_config.buffer_size = 10;
 	hadc.nrf_saadc_config.saadc_event_handler = saadc_event_handler;
@@ -183,23 +137,7 @@ static int adc_init(void)
 	hadc.nrf_saadc_config.timer.timer_instance = NULL;	  // Default
 	hadc.nrf_saadc_config.timer.timer_config = NULL;	  // Default
 	hadc.nrf_saadc_config.timer.saadc_sampling_time = 10; // 10us
-#else
-	k_poll_signal_init(&adc_sig);
 
-	hadc.adc_dev = adc;
-	hadc.channel_cfg.gain = ADC_GAIN_1_6;
-	hadc.channel_cfg.acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 3);
-	hadc.channel_cfg.reference = ADC_REF_INTERNAL;
-	hadc.channel_cfg.channel_id = ADC_CHANNEL;
-	hadc.channel_cfg.input_positive = NRF_SAADC_AIN0;
-
-	hadc.sequence.channels = BIT(ADC_CHANNEL);
-	hadc.sequence.buffer = adc_sample_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
-	hadc.sequence.buffer_size = sizeof(adc_sample_buffer);
-	hadc.sequence.resolution = ADC_RESOLUTION;
-
-	hadc.opt.adc_sig = &adc_sig;
-#endif
 	return adc_drv_config(&hadc);
 }
 

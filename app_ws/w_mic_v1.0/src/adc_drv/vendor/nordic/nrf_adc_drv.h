@@ -37,14 +37,7 @@ typedef struct
 
 typedef struct
 {
-  uint8_t m_saadc_sample_ppi_channel;
-  uint8_t m_saadc_start_ppi_channel;
-} adc_drv_adv_ppi_setting_t;
-
-typedef struct
-{
   adc_drv_adv_timer_setting_t timer;
-  adc_drv_adv_ppi_setting_t ppi;
   nrfx_saadc_adv_config_t saadc;
   nrfx_saadc_channel_t saadc_ch;
   saadc_event_handler_t saadc_event_handler;

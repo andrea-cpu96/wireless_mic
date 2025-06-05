@@ -7,6 +7,12 @@
  * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
  */
 
+/**
+ * TODO
+ * Create unit tests to verify the correct function of both
+ * the default modes and the mode with personal settings.
+ */
+
 /* System */
 #include <zephyr/devicetree.h>
 #include <zephyr/device.h>
