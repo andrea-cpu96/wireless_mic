@@ -9,7 +9,12 @@
 /* Custom peripheral drivers */
 #include "pwm_drv.h"
 #include "adc_drv.h"
+
+/* Apps */
 #include "audio.h"
+
+/* Support */
+#include <math.h>
 
 #define SIG_GENERATOR 2
 
@@ -20,7 +25,7 @@
 #define ADC_BUFFER_SIZE 512
 
 /* I2S data structures */
-const struct device *const i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
+const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 
 /* ADC data structures */
 const struct device *adc = DEVICE_DT_GET(DT_NODELABEL(adc));
@@ -93,8 +98,7 @@ int main(void)
 	}
 #else
 
-	// i2s_config(i2s_dev);
-	// i2s_sample(i2s_dev);
+	i2s_sample();
 
 	k_sleep(K_FOREVER);
 	while (1)
@@ -162,12 +166,19 @@ static int periph_config(void)
 		return -1;
 	}
 #else
+/*
 	if (adc_init() < 0)
 	{
 		printk("Error: ADC device not ready\r\n");
 		return -1;
 	}
+*/
 #endif
+	if (i2s_config(i2s_dev) < 0)
+	{
+		printk("Error: I2S device not ready\r\n");
+		return -1;
+	}
 
 	return 0;
 }

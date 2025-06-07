@@ -20,7 +20,8 @@
 			"sine.h": "c",
 			"adc_context.h": "c",
 			"adc_cont_samp.h": "c",
-			"nrf_adc_drv.h": "c"
+			"nrf_adc_drv.h": "c",
+			"i2s_drv.h": "c"
 		}
 	}
 }

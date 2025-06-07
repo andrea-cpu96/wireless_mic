@@ -7,15 +7,15 @@
  * @copyright (c) 2025 Andrea Fato. Tutti i diritti riservati.
  */
 
-#ifndef AUDIO
-#define AUDIO
+#ifndef I2S_SAMPLE
+#define I2S_SAMPLE
 
 /* System */
 #include <zephyr/kernel.h>
-/* Peripheral drivers */
-#include "i2s_drv.h"
+/* Zephyr peripheral drivers */
+#include <zephyr/drivers/i2s.h>
 
 int i2s_config(const struct device *dev_i2s);
-int i2s_sample(void);
+int i2s_sample(const struct device *dev_i2s);
 
-#endif /* AUDIO */
+#endif /* I2S_SAMPLE */

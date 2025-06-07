@@ -16,7 +16,7 @@
 /* Support */
 #include <math.h>
 
-#include "audio.h"
+#include "i2s_sample.h"
 
 /* Constants */
 #define PI (float)3.14159265
@@ -24,7 +24,7 @@
 
 /* Tone specs */
 #define TONE_FREQ 500
-#define DURATION_SEC (float)1.0
+#define DURATION_SEC (float)3.0
 
 /* Audio specs */
 #define STEREO 1 // MAX98357A always exspects input data in stereo format (it selects the channnel via  SD pin)
@@ -40,12 +40,11 @@
 /* Computations */
 #define AMPLITUDE (VOLUME_REF * VOLUME_LEV)
 #define SAMPLE_NO (SAMPLE_FREQ / TONE_FREQ)
-#define CHUNK_DURATION (float)((float)SAMPLE_NO / (float)SAMPLE_FREQ)
+#define CHUNK_DURATION (float)((float)SAMPLE_NO * (float)NUM_BLOCKS / (float)SAMPLE_FREQ)
 #define NUM_OF_REP (uint16_t)((float)DURATION_SEC / (float)CHUNK_DURATION)
 
 /** @brief Sine wave data buffer */
 static int16_t sin_data[SAMPLE_NO];
-int16_t tx_block[SAMPLE_NO * 2] = {0};
 
 #define BLOCK_SIZE (CHANNELS_NUMBER * sizeof(sin_data))
 
@@ -68,12 +67,10 @@ int16_t tx_block[SAMPLE_NO * 2] = {0};
  */
 K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
-i2s_drv_config_t hi2s;
-
 static void generate_sine_wave(void);
-static void fill_buf(void);
+static void fill_buf(int16_t *tx_block);
 
-struct i2s_config i2s_cfg_local = {0};
+void *tx_block[NUM_BLOCKS] = {0}; // Pointer to the blocks
 
 /**
  * @brief I2S configuration
@@ -83,6 +80,8 @@ struct i2s_config i2s_cfg_local = {0};
  */
 int i2s_config(const struct device *dev_i2s)
 {
+    struct i2s_config i2s_cfg = {0};
+
     /* Check device is ready */
     if (!device_is_ready(dev_i2s))
     {
@@ -91,20 +90,22 @@ int i2s_config(const struct device *dev_i2s)
     }
 
     /* Configure I2S */
-    hi2s.dev_i2s = dev_i2s;
-    hi2s.i2s_cfg_dir = I2S_DIR_TX;
-    i2s_cfg_local.word_size = 16;
-    i2s_cfg_local.channels = CHANNELS_NUMBER;
-    i2s_cfg_local.format = I2S_FMT_DATA_FORMAT_I2S;
-    i2s_cfg_local.frame_clk_freq = SAMPLE_FREQ;
-    i2s_cfg_local.block_size = BLOCK_SIZE;
-    i2s_cfg_local.timeout = 2000;
-    i2s_cfg_local.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER;
-    i2s_cfg_local.mem_slab = &tx_0_mem_slab;
+    i2s_cfg.word_size = 16;
+    i2s_cfg.channels = CHANNELS_NUMBER;
+    i2s_cfg.format = I2S_FMT_DATA_FORMAT_I2S;
+    i2s_cfg.frame_clk_freq = SAMPLE_FREQ;
+    i2s_cfg.block_size = BLOCK_SIZE;
+    i2s_cfg.timeout = 2000;
+    i2s_cfg.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER;
+    i2s_cfg.mem_slab = &tx_0_mem_slab;
 
-    hi2s.i2s_cfg = &i2s_cfg_local;
+    if (i2s_configure(dev_i2s, I2S_DIR_TX, &i2s_cfg) < 0)
+    {
+        printf("Failed to configure I2S\n");
+        return -1;
+    }
 
-    return i2s_drv_config(&hi2s);
+    return 0;
 }
 
 /**
@@ -113,18 +114,61 @@ int i2s_config(const struct device *dev_i2s)
  * @param dev_i2s
  * @return int
  */
-int i2s_sample(void)
+int i2s_sample(const struct device *dev_i2s)
 {
+    volatile uint32_t tx_idx = 0;
+
     /* Generate sine wave */
     generate_sine_wave();
-    fill_buf();
 
-    for (int rep = 0; rep < NUM_OF_REP; rep++)
+    /* Allocate slab blocks */
+    for (tx_idx = 0; tx_idx < NUM_BLOCKS; tx_idx++)
     {
-        i2s_drv_send(&hi2s, tx_block, SAMPLE_NO);
+        /* One block allocated for each cycle */
+        if (k_mem_slab_alloc(&tx_0_mem_slab, &tx_block[tx_idx], K_FOREVER) < 0)
+        {
+            printf("Failed to allocate TX block\n");
+            return -1;
+        }
+        /* Fill each block with data */
+        fill_buf((int16_t *)tx_block[tx_idx]);
     }
 
-    i2s_drv_drain(&hi2s);
+    /* Write initial block (needed by I2S to know at least one block is ready)*/
+    if (i2s_write(dev_i2s, tx_block[tx_idx++], BLOCK_SIZE) < 0)
+    {
+        printf("Could not write TX block\n");
+        return -1;
+    }
+
+    /* Start transmission */
+    if (i2s_trigger(dev_i2s, I2S_DIR_TX, I2S_TRIGGER_START) < 0)
+    {
+        printf("Could not trigger I2S\n");
+        return -1;
+    }
+
+    /* Send remaining blocks in loop */
+    uint16_t rep_num = NUM_OF_REP;
+    for (int loop = 0; loop < rep_num; loop++)
+    {
+        for (; tx_idx < NUM_BLOCKS;)
+        {
+            if (i2s_write(dev_i2s, tx_block[tx_idx++], BLOCK_SIZE) < 0)
+            {
+                printf("Write failed at block %d\n", tx_idx);
+                return -1;
+            }
+        }
+        tx_idx = 0; // loop again
+    }
+
+    /* Drain (kill the I2S communication)*/
+    if (i2s_trigger(dev_i2s, I2S_DIR_TX, I2S_TRIGGER_DRAIN) < 0)
+    {
+        printf("Could not drain I2S\n");
+        return -1;
+    }
 
     printf("I2S streaming complete.\n");
     return 0;
@@ -152,7 +196,7 @@ static void generate_sine_wave(void)
  * This code also simulates a stereo signal by shifting
  * the right channel with the signal delayed by 90 degree.
  */
-static void fill_buf(void)
+static void fill_buf(int16_t *tx_block)
 {
     for (int i = 0; i < SAMPLE_NO; i++)
     {
