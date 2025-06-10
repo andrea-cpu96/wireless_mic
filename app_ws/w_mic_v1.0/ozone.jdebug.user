@@ -1,37 +1,38 @@
 
 
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c:52, State=BP_STATE_ON
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c:65:9, State=BP_STATE_DISABLED
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c:67:13, State=BP_STATE_DISABLED
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c:70:9, State=BP_STATE_DISABLED
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c:97, State=BP_STATE_ON
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c:109:9, State=BP_STATE_DISABLED
-Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio/audio.c:124, State=BP_STATE_ON
-OpenDocument="cpu_idle.c", FilePath="C:/ncs/v3.0.1/zephyr/arch/arm/core/cortex_m/cpu_idle.c", Line=85
-OpenDocument="i2s_drv.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/i2s_drv/i2s_drv.c", Line=42
-OpenDocument="audio.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio/audio.c", Line=114
-OpenDocument="device.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/device.h", Line=47
-OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/main.c", Line=91
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio/audio.c:128:1, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio/audio.c:135, State=BP_STATE_DISABLED
+Breakpoint=C:/ncs/v3.0.1/zephyr/kernel/work.c:1156:2, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/kernel.h:1102:2, State=BP_STATE_DISABLED
+Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/kernel.h:1119:2, State=BP_STATE_DISABLED
+OpenDocument="cpu_idle.c", FilePath="C:/ncs/v3.0.1/zephyr/arch/arm/core/cortex_m/cpu_idle.c", Line=83
+OpenDocument="kernel.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/kernel.h", Line=1092
+OpenDocument="fatal.c", FilePath="C:/ncs/v3.0.1/zephyr/kernel/fatal.c", Line=136
+OpenDocument="device.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/build/w_mic_v1.0/zephyr/include/generated/zephyr/syscalls/device.h", Line=45
+OpenDocument="nrf_adc_drv.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/adc_drv/vendor/nordic/nrf_adc_drv.c", Line=77
+OpenDocument="audio.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/audio/audio.c", Line=144
+OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0/src/main.c", Line=55
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=1, w=481, h=167, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=483, h=224, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=0
-OpenWindow="Local Data", DockArea=RIGHT, x=0, y=0, w=481, h=218, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=2, w=483, h=302, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=483, h=138, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=1, w=481, h=176, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=537, h=344, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=0
+OpenWindow="Local Data", DockArea=RIGHT, x=0, y=0, w=481, h=338, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=2, w=537, h=289, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=537, h=151, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 OpenWindow="Data Sampling", DockArea=BOTTOM, x=1, y=0, w=400, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
-OpenWindow="Timeline", DockArea=RIGHT, x=0, y=2, w=481, h=279, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="1 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;121", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="296;-61", CodeGraphLegendShown=0, CodeGraphLegendPosition="317;0"
-OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1299, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Timeline", DockArea=RIGHT, x=0, y=2, w=481, h=270, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=0, CodePaneShown=0, PinCursor="Cursor Movable", TimePerDiv="1 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=0, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="0;111", DataGraphShowNamesAtCursor=0, PowerGraphDrawAsPoints=0, PowerGraphLegendShown=0, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="296;-61", CodeGraphLegendShown=0, CodeGraphLegendPosition="317;0"
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1519, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;500]
-TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;385;644]
-TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[119;100;100;100;230;175]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;385;525]
+TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[119;100;100;100;230;100]
 TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[1183;100;100;100;980]
 TableHeader="Data Sampling Table", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time"], ColWidths=[100;300]
 TableHeader="Data Sampling Setup", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[100;100;100;100;100;100;100;101;104]
 TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
-TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[155;100;100;128]
+TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[155;367;100;100]
 TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
 TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;351]
-WatchedExpression="adc_buffer", RefreshRate=5, Window=Watched Data 1
-WatchedExpression="i2s_drv", Window=Watched Data 1
-WatchedExpression="tx_block", Window=Watched Data 1
+WatchedExpression="adc_buffer", RefreshRate=5, DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="err", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="addr", RefreshRate=5, DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="a", RefreshRate=5, DisplayFormat=DISPLAY_FORMAT_DEC, Window=Watched Data 1

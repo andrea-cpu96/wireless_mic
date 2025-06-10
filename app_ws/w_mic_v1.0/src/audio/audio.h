@@ -10,12 +10,11 @@
 #ifndef AUDIO
 #define AUDIO
 
-/* System */
-#include <zephyr/kernel.h>
-/* Peripheral drivers */
-#include "i2s_drv.h"
+void audio_process(void);
 
-int i2s_config(const struct device *dev_i2s);
-int i2s_sample(void);
+int i2s_config(void);
+int i2s_tone(void);
+
+int adc_config(void);
 
 #endif /* AUDIO */

@@ -81,9 +81,9 @@ static int adc_drv_adv_config(nrf_saadc_setting_t *adc_handler)
 
 	for (int i = 0; i < adc_handler->buffer_config.buffers_number; i++)
 	{
-		err = nrfx_saadc_buffer_set(&adc_handler->buffer_config.buffer[i * adc_handler->buffer_config.buffer_size], adc_handler->buffer_config.buffer_size);
+		err = nrfx_saadc_buffer_set(adc_handler->buffer_config.buffer[i], adc_handler->buffer_config.buffer_size);
 		if (err != NRFX_SUCCESS)
-		{
+		{ 
 			printk("ADC; buffer set error\r\n");
 			return -1;
 		}

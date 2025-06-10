@@ -9,14 +9,16 @@
 
 /* System */
 #include <zephyr/kernel.h>
-#include <zephyr/sys/iterable_sections.h>
-#include <zephyr/drivers/i2s.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/device.h>
 /* Standard C libraries */
 #include <stdio.h>
 /* Support */
 #include <math.h>
 
 #include "audio.h"
+#include "app_peripherals.h"
+#include "app_threads.h"
 
 /* Constants */
 #define PI (float)3.14159265
@@ -27,15 +29,8 @@
 #define DURATION_SEC (float)1.0
 
 /* Audio specs */
-#define STEREO 1 // MAX98357A always exspects input data in stereo format (it selects the channnel via  SD pin)
 #define VOLUME_LEV 5
-#define SAMPLE_FREQ 44100
-#define NUM_BLOCKS 4 // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers)
-#if (STEREO == 1)
-#define CHANNELS_NUMBER 2
-#else
-#define CHANNELS_NUMBER 1
-#endif
+#define NUM_BLOCKS NUM_OF_BUFFERS // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers)
 
 /* Computations */
 #define AMPLITUDE (VOLUME_REF * VOLUME_LEV)
@@ -43,11 +38,7 @@
 #define CHUNK_DURATION (float)((float)SAMPLE_NO / (float)SAMPLE_FREQ)
 #define NUM_OF_REP (uint16_t)((float)DURATION_SEC / (float)CHUNK_DURATION)
 
-/** @brief Sine wave data buffer */
-static int16_t sin_data[SAMPLE_NO];
-int16_t tx_block[SAMPLE_NO * 2] = {0};
-
-#define BLOCK_SIZE (CHANNELS_NUMBER * sizeof(sin_data))
+#define BLOCK_SIZE (DATA_BUFFER_SIZE_8) // Buffer size multiplied by the number of bytes per data
 
 /** @brief Slab memory structure
  *
@@ -66,54 +57,34 @@ int16_t tx_block[SAMPLE_NO * 2] = {0};
  * 1) Deterministic memory access to the data
  * 2) No memory fragmentation of the data
  */
-K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
+//K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
-i2s_drv_config_t hi2s;
+/** @brief Sine wave data buffer */
+static int16_t sin_data[SAMPLE_NO];
+int16_t tx_block[SAMPLE_NO * 2] = {0};
 
 static void generate_sine_wave(void);
 static void fill_buf(void);
 
-struct i2s_config i2s_cfg_local = {0};
-
 /**
- * @brief I2S configuration
+ * @brief audio_process
  *
- * @param dev_i2s
- * @return int
  */
-int i2s_config(const struct device *dev_i2s)
+void audio_process(void)
 {
-    /* Check device is ready */
-    if (!device_is_ready(dev_i2s))
-    {
-        printf("I2S device not ready\n");
-        return -1;
-    }
+    adc_config();
+    i2s_config();
 
-    /* Configure I2S */
-    hi2s.dev_i2s = dev_i2s;
-    hi2s.i2s_cfg_dir = I2S_DIR_TX;
-    i2s_cfg_local.word_size = 16;
-    i2s_cfg_local.channels = CHANNELS_NUMBER;
-    i2s_cfg_local.format = I2S_FMT_DATA_FORMAT_I2S;
-    i2s_cfg_local.frame_clk_freq = SAMPLE_FREQ;
-    i2s_cfg_local.block_size = BLOCK_SIZE;
-    i2s_cfg_local.timeout = 2000;
-    i2s_cfg_local.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER;
-    i2s_cfg_local.mem_slab = &tx_0_mem_slab;
-
-    hi2s.i2s_cfg = &i2s_cfg_local;
-
-    return i2s_drv_config(&hi2s);
+    adc_thread_create();
+    i2s_thread_create();
 }
 
 /**
- * @brief i2s example
+ * @brief i2s_tone
  *
- * @param dev_i2s
  * @return int
  */
-int i2s_sample(void)
+int i2s_tone(void)
 {
     /* Generate sine wave */
     generate_sine_wave();

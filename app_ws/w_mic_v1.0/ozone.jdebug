@@ -22,12 +22,12 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0", "$(ProjectDir)");
-  Project.AddPathSubstitute ("d:/andrea/embedded/repositories/wireless_mic/app_ws/w_mic_v1.0", "$(ProjectDir)");
   Project.SetDevice ("nRF5340_xxAA_APP");
-  Project.SetHostIF ("USB", "1050089623");
+  Project.SetHostIF ("USB", "1050026783");
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
+  Project.AddPathSubstitute ("D:/Andrea/Embedded/repositories/wireless_mic/app_ws/w_mic_v1.0", "$(ProjectDir)");
+  Project.AddPathSubstitute ("d:/andrea/embedded/repositories/wireless_mic/app_ws/w_mic_v1.0", "$(ProjectDir)");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M33F.svd");
   //
   // User settings

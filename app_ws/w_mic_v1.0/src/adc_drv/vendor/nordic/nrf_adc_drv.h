@@ -30,7 +30,7 @@ typedef struct
 
 typedef struct
 {
-  int16_t *buffer;
+  int16_t **buffer;
   uint8_t buffers_number;
   uint16_t buffer_size;
 } adc_drv_adv_buffer_setting_t;
