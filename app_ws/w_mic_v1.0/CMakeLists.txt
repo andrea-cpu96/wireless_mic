@@ -12,6 +12,7 @@ target_sources(app PRIVATE
   src/main.c
   src/app_peripherals.c
   src/app_threads.c
+  src/app_config.c
   src/pwm_drv/pwm_drv.c
   src/adc_drv/adc_drv.c
   src/i2s_drv/i2s_drv.c

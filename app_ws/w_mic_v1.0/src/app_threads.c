@@ -1,6 +1,6 @@
 #include "app_threads.h"
-#include "app_config.h"
 #include "app_peripherals.h"
+#include "app_config.h"
 
 K_THREAD_STACK_DEFINE(i2s_stack, I2S_STACK_SIZE);
 K_THREAD_STACK_DEFINE(adc_stack, ADC_STACK_SIZE);

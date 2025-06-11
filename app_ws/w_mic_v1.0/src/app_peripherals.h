@@ -8,8 +8,6 @@
 #include "i2s_drv.h"
 #include "adc_drv.h"
 
-#define NUM_OF_BUFFERS 2
-
 #define STEREO 1 // MAX98357A always exspects input data in stereo format (it selects the channnel via  SD pin)
 #if (STEREO == 1)
 #define CHANNELS_NUMBER 2
