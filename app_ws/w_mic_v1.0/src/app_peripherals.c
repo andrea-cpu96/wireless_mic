@@ -2,17 +2,20 @@
 #include <zephyr/devicetree.h>
 
 #include "app_peripherals.h"
-#include "app_threads.h"
+#include "app_config.h"
 
+/* I2S data structures */
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 i2s_drv_config_t hi2s;
 static struct i2s_config i2s_cfg_local = {0};
 
+/* ADC data structures */
 const struct device *adc = DEVICE_DT_GET(DT_NODELABEL(adc));
 adc_handler_t hadc;
 
-int16_t *adc_buffer[NUM_OF_BUFFERS];
-int idx = 0; // Used to switch between buffers
+int16_t *data_buffer[NUM_OF_BUFFERS];
+int block_adc_idx = 0;
+int block_i2s_idx = 1;
 
 /**
  * @brief saadc_event_handler
@@ -71,12 +74,12 @@ int adc_config(void)
             printf("Failed to allocate TX block\n");
             return -1;
         }
-        adc_buffer[i] = (uint16_t *)adc_block;
+        data_buffer[i] = (uint16_t *)adc_block;
     }
 
     hadc.mode = ADC_DRV_ASYNC_CONT;
     hadc.nrf_saadc_config.adv_default = 1;
-    hadc.nrf_saadc_config.buffer_config.buffer = adc_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
+    hadc.nrf_saadc_config.buffer_config.buffer = data_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
     hadc.nrf_saadc_config.buffer_config.buffers_number = 3;
     hadc.nrf_saadc_config.buffer_config.buffer_size = DATA_BUFFER_SIZE_16;
     hadc.nrf_saadc_config.saadc_event_handler = saadc_event_handler;

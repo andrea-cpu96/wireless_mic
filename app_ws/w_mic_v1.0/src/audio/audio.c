@@ -17,54 +17,11 @@
 #include <math.h>
 
 #include "audio.h"
+#include "app_config.h"
 #include "app_peripherals.h"
 #include "app_threads.h"
 
-/* Constants */
-#define PI (float)3.14159265
-#define VOLUME_REF (32768.0 / 10)
-
-/* Tone specs */
-#define TONE_FREQ 500
-#define DURATION_SEC (float)1.0
-
-/* Audio specs */
-#define VOLUME_LEV 5
-#define NUM_BLOCKS NUM_OF_BUFFERS // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers)
-
-/* Computations */
-#define AMPLITUDE (VOLUME_REF * VOLUME_LEV)
-#define SAMPLE_NO (SAMPLE_FREQ / TONE_FREQ)
-#define CHUNK_DURATION (float)((float)SAMPLE_NO / (float)SAMPLE_FREQ)
-#define NUM_OF_REP (uint16_t)((float)DURATION_SEC / (float)CHUNK_DURATION)
-
-#define BLOCK_SIZE (DATA_BUFFER_SIZE_8) // Buffer size multiplied by the number of bytes per data
-
-/** @brief Slab memory structure
- *
- * A slab memory structure organizes data into blocks
- * of memory with the same size and aligned.
- *
- * The memory is then accessed per block (not single data)
- * This means;
- * 1) More blocks that are smaller → higher granularity, lower audio delay,
- *    but increased overhead due to more frequent accesses to different blocks.
- * 2) Fewer blocks that are bigger → lower overhead (fewer memory accesses,
- *    potentially reducing distortion), but increased audio delay since more
- *    time is needed to wait for a block to become available for new data.
- *
- * The main advantages of this data structure are;
- * 1) Deterministic memory access to the data
- * 2) No memory fragmentation of the data
- */
-//K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
-
-/** @brief Sine wave data buffer */
-static int16_t sin_data[SAMPLE_NO];
-int16_t tx_block[SAMPLE_NO * 2] = {0};
-
-static void generate_sine_wave(void);
-static void fill_buf(void);
+/*********************************************** AUDIO PROCESSING */
 
 /**
  * @brief audio_process
@@ -78,6 +35,32 @@ void audio_process(void)
     adc_thread_create();
     i2s_thread_create();
 }
+
+/*********************************************** SYNTHETIZER */
+
+/* Constants */
+#define PI (float)3.14159265
+#define VOLUME_REF (32768.0 / 10)
+
+/* Tone specs */
+#define TONE_FREQ 500
+#define DURATION_SEC (float)1.0
+
+/* Audio specs */
+#define VOLUME_LEV 5
+
+/* Computations */
+#define AMPLITUDE (VOLUME_REF * VOLUME_LEV)
+#define SAMPLE_NO (SAMPLE_FREQ / TONE_FREQ)
+#define CHUNK_DURATION (float)((float)SAMPLE_NO / (float)SAMPLE_FREQ)
+#define NUM_OF_REP (uint16_t)((float)DURATION_SEC / (float)CHUNK_DURATION)
+
+/** @brief Sine wave data buffer */
+static int16_t sin_data[SAMPLE_NO];
+int16_t tx_block[SAMPLE_NO * sizeof(int16_t)] = {0};
+
+static void generate_sine_wave(void);
+static void fill_buf(void);
 
 /**
  * @brief i2s_tone

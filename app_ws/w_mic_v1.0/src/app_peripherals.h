@@ -9,8 +9,6 @@
 #include "adc_drv.h"
 
 #define NUM_OF_BUFFERS 2
-#define DATA_BUFFER_SIZE_16 (1000)
-#define DATA_BUFFER_SIZE_8 (1000 * 2)
 
 #define STEREO 1 // MAX98357A always exspects input data in stereo format (it selects the channnel via  SD pin)
 #if (STEREO == 1)
@@ -21,8 +19,6 @@
 
 #define SAMPLE_FREQ 44100
 
-K_MEM_SLAB_DEFINE(tx_0_mem_slab, 10, 10, 4);
-
 /* I2S data structures */
 extern const struct device *i2s_dev;
 extern i2s_drv_config_t hi2s;
@@ -30,9 +26,6 @@ extern i2s_drv_config_t hi2s;
 /* ADC data structures */
 extern const struct device *adc;
 extern adc_handler_t hadc;
-
-extern int16_t *adc_buffer[NUM_OF_BUFFERS];
-extern int idx; // Used to switch between buffers
 
 int adc_config(void);
 int i2s_config(void);
