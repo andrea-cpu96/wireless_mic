@@ -80,7 +80,7 @@ int adc_config(void)
     hadc.mode = ADC_DRV_ASYNC_CONT;
     hadc.nrf_saadc_config.adv_default = 1;
     hadc.nrf_saadc_config.buffer_config.buffer = data_buffer; // The ADC internal easyDMA automatically transfers data to the RAM region identified by this buffer
-    hadc.nrf_saadc_config.buffer_config.buffers_number = 3;
+    hadc.nrf_saadc_config.buffer_config.buffers_number = NUM_OF_BUFFERS;
     hadc.nrf_saadc_config.buffer_config.buffer_size = DATA_BUFFER_SIZE_16;
     hadc.nrf_saadc_config.saadc_event_handler = saadc_event_handler;
     hadc.nrf_saadc_config.saadc_ch.channel_config.gain = ADC_GAIN_1_6;
@@ -88,9 +88,9 @@ int adc_config(void)
 
     hadc.nrf_saadc_config.timer.timer_instance = NULL;      // Default
     hadc.nrf_saadc_config.timer.timer_config = NULL;        // Default
-    hadc.nrf_saadc_config.timer.saadc_sampling_time = 1000; // 22us -> 44100 kHz
+    hadc.nrf_saadc_config.timer.saadc_sampling_time = 22; // 22us -> 44100 kHz
 
-    return adc_drv_config(&hadc);
+    return adc_drv_config(&hadc); 
 }
 
 /**

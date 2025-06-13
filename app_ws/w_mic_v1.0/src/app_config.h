@@ -6,8 +6,8 @@
 
 #define NUM_OF_BUFFERS 2
 
-#define DATA_BUFFER_SIZE_16 (1000)
-#define DATA_BUFFER_SIZE_8 (1000 * 2)
+#define DATA_BUFFER_SIZE_16 (7608)
+#define DATA_BUFFER_SIZE_8 (DATA_BUFFER_SIZE_16 * 2)
 
 #define NUM_BLOCKS NUM_OF_BUFFERS // Each block is a buffer (2 buffers; 1 to read and 1 to write simultaneosly + 2 backup buffers)
 #define BLOCK_SIZE (DATA_BUFFER_SIZE_8) // Buffer size multiplied by the number of bytes per data

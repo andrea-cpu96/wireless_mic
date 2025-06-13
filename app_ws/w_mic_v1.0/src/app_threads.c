@@ -19,8 +19,6 @@ volatile int16_t a = 0; // Debug variable
  */
 void adc_thread(void *p1, void *p2, void *p3)
 {
-    static int first = 1;     // Indicates the first iteration
-    volatile void *adc_block; // Slab memory block
     nrfx_err_t err;
 
     while (1)
@@ -28,27 +26,8 @@ void adc_thread(void *p1, void *p2, void *p3)
         k_sem_take(&adc_sem, K_FOREVER);
         a = *((int16_t *)(data_buffer[block_adc_idx]));
 
-        /* Free all buffer the first time  */
-        if (first)
-        {
-            first = 0;
-            k_mem_slab_free(&tx_0_mem_slab, data_buffer[0]);
-            k_mem_slab_free(&tx_0_mem_slab, data_buffer[1]);
-        }
-
-        /* Allocate a memory block from the slab */
-        if (k_mem_slab_alloc(&tx_0_mem_slab, (void **)&adc_block, K_FOREVER) < 0)
-        {
-            printf("Failed to allocate ADC block\n");
-            return;
-        }
-
-        /* Free previous buffer block */
-        k_mem_slab_free(&tx_0_mem_slab, data_buffer[block_adc_idx]);
-
         /* Set up the next available buffer block */
         block_adc_idx = (block_adc_idx) ? 0 : 1;
-        data_buffer[block_adc_idx] = (int16_t *)adc_block;
         err = nrfx_saadc_buffer_set(data_buffer[block_adc_idx], DATA_BUFFER_SIZE_16);
         if (err != NRFX_SUCCESS)
         {
@@ -59,6 +38,8 @@ void adc_thread(void *p1, void *p2, void *p3)
     }
 }
 
+int16_t tx_i2s[DATA_BUFFER_SIZE_16 * 2] = {0};
+
 /**
  * @brief i2s_thread
  *
@@ -68,37 +49,37 @@ void adc_thread(void *p1, void *p2, void *p3)
  */
 void i2s_thread(void *p1, void *p2, void *p3)
 {
-    static int first = 1; // Indicates the first iteration
-    void *i2s_block[DATA_BUFFER_SIZE_8]; // Slab memory block
+    int16_t *ptx_data;
+    // int first = 1;
 
     while (1)
     {
         k_sem_take(&i2s_sem, K_FOREVER);
 
-        /* Copy data from full ADC block to I2S block */
-        memcpy(i2s_block, data_buffer[block_i2s_idx], DATA_BUFFER_SIZE_8);
+        block_i2s_idx = (block_adc_idx) ? 0 : 1; // Toggle between the two blocks
 
-        block_i2s_idx = (block_i2s_idx) ? 0 : 1; // Toggle between the two blocks
+        ptx_data = data_buffer[block_i2s_idx];
+
+        for (int i = 0; i < DATA_BUFFER_SIZE_16; i++)
+        {
+            tx_i2s[2 * i] = ptx_data[i]; // Left channel
+            // tx_i2s[2 * i + 1] = 0;       // Right channel
+        }
 
         /* Write data over I2S queue */
-        if (i2s_write(i2s_dev, (int16_t *)i2s_block, DATA_BUFFER_SIZE_8) < 0)
+        if (i2s_write(i2s_dev, tx_i2s, DATA_BUFFER_SIZE_8) < 0)
         {
             printf("Could not write TX block\n");
             return;
         }
 
-        if (first)
+        if (i2s_trigger(i2s_dev, I2S_DIR_TX, I2S_TRIGGER_START) < 0)
         {
-            first = 0;
-
-            if (i2s_trigger(i2s_dev, I2S_DIR_TX, I2S_TRIGGER_START) < 0)
-            {
-                printf("Could not trigger I2S\n");
-                return;
-            }
+            printf("Could not trigger I2S\n");
+            return;
         }
 
-        // i2s_drv_drain(&hi2s);
+        i2s_drv_drain(&hi2s);
     }
 }
 
