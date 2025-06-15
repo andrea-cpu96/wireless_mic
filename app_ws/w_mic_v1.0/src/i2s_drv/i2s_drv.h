@@ -14,6 +14,6 @@ typedef struct
 
 int i2s_drv_config(i2s_drv_config_t *i2s_drv);
 int i2s_drv_send(i2s_drv_config_t *i2s_drv, void *data, uint32_t num_of_bytes);
-int i2s_drv_drain(i2s_drv_config_t *i2s_drv);
+int i2s_drv_drop(i2s_drv_config_t *i2s_drv);
 
 #endif /* I2S_DRV */

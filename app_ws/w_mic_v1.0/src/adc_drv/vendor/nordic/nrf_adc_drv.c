@@ -40,15 +40,16 @@ void nrf_adc_drv_continuous(nrf_saadc_setting_t *adc_handler)
 	adc_drv_adv_ppi_configure();
 }
 
+volatile nrfx_err_t err;
+
 static int adc_drv_adv_config(nrf_saadc_setting_t *adc_handler)
 {
-	nrfx_err_t err;
-
 	/**
 	 * TODO
 	 * personal settings
 	 */
 	nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(adc_handler->saadc_ch.pin_p, 0); // Channel 0 default 
+	channel.channel_config.acq_time = adc_handler->timer.saadc_sampling_time;
 	channel.channel_config.gain = adc_handler->saadc_ch.channel_config.gain;
 	err = nrfx_saadc_channels_config(&channel, 1); /** TODO configure number of channels */
 	if (err != NRFX_SUCCESS)

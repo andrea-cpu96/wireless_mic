@@ -97,10 +97,10 @@ int i2s_drv_send(i2s_drv_config_t *i2s_drv, void *data, uint32_t num_of_bytes)
     return 0;
 }
 
-int i2s_drv_drain(i2s_drv_config_t *i2s_drv)
+int i2s_drv_drop(i2s_drv_config_t *i2s_drv)
 {
     /* Finish current block and then stop */
-    if (i2s_trigger(i2s_drv->dev_i2s, I2S_DIR_TX, I2S_TRIGGER_DRAIN) < 0)
+    if (i2s_trigger(i2s_drv->dev_i2s, I2S_DIR_TX, I2S_TRIGGER_DROP) < 0)
     {
         printf("Could not drain I2S\n");
         return -1;

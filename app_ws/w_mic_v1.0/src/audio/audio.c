@@ -78,7 +78,7 @@ int i2s_tone(void)
         i2s_drv_send(&hi2s, tx_block, SAMPLE_NO);
     }
 
-    i2s_drv_drain(&hi2s);
+    i2s_drv_drop(&hi2s);
 
     printf("I2S streaming complete.\n");
     return 0;

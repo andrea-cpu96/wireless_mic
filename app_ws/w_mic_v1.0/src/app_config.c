@@ -20,4 +20,4 @@ K_SEM_DEFINE(i2s_sem, 0, 1);
  * 1) Deterministic memory access to the data
  * 2) No memory fragmentation of the data
  */
-K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
+K_MEM_SLAB_DEFINE(tx_0_mem_slab, BLOCK_SIZE, 2, 4);

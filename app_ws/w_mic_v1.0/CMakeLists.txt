@@ -18,6 +18,7 @@ target_sources(app PRIVATE
   src/i2s_drv/i2s_drv.c
   src/audio/audio.c
   src/adc_drv/vendor/nordic/nrf_adc_drv.c
+  src/examples/i2s_sample/i2s_sample.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
@@ -29,4 +30,5 @@ zephyr_library_include_directories(
   src/adc_drv/
   src/i2s_drv/
   src/adc_drv/vendor/nordic/
+  src/examples/i2s_sample/
 )

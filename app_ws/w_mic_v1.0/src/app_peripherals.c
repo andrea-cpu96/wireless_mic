@@ -14,8 +14,8 @@ const struct device *adc = DEVICE_DT_GET(DT_NODELABEL(adc));
 adc_handler_t hadc;
 
 int16_t *data_buffer[NUM_OF_BUFFERS];
-int block_adc_idx = 0;
-int block_i2s_idx = 1;
+volatile int block_adc_idx = 0;
+volatile int block_i2s_idx = 0xFF;
 
 /**
  * @brief saadc_event_handler
@@ -111,7 +111,7 @@ int i2s_config(void)
     hi2s.dev_i2s = i2s_dev;
     hi2s.i2s_cfg_dir = I2S_DIR_TX;
     i2s_cfg_local.word_size = 16;
-    i2s_cfg_local.channels = CHANNELS_NUMBER;
+    i2s_cfg_local.channels = 1;//CHANNELS_NUMBER;
     i2s_cfg_local.format = I2S_FMT_DATA_FORMAT_I2S;
     i2s_cfg_local.frame_clk_freq = SAMPLE_FREQ;
     i2s_cfg_local.block_size = DATA_BUFFER_SIZE_8;
