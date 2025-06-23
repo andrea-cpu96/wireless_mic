@@ -25,7 +25,8 @@ void adc_thread(void *p1, void *p2, void *p3)
         block_adc_idx = (block_adc_idx) ? 0 : 1;
 
         nrfx_timer_disable(hadc.nrf_saadc_config.timer.timer_instance);
-        while(block_adc_idx == block_i2s_idx);
+        while (block_adc_idx == block_i2s_idx)
+            ;
         nrfx_timer_enable(hadc.nrf_saadc_config.timer.timer_instance);
 
         if (nrfx_saadc_buffer_set(data_buffer[block_adc_idx], DATA_BUFFER_SIZE_16) != NRFX_SUCCESS)
@@ -52,12 +53,11 @@ void i2s_thread(void *p1, void *p2, void *p3)
     {
         k_sem_take(&i2s_sem, K_FOREVER);
 
-        if (block_adc_idx != block_i2s_idx)
-        {
-            //printf("BUFFERS EQUAL\n");
-        }
-
         block_i2s_idx = (block_adc_idx) ? 0 : 1; // Toggle between the two blocks
+
+        
+        for (int i = 0; i < DATA_BUFFER_SIZE_16; i++)
+            data_buffer[block_i2s_idx][i] = (data_buffer[block_i2s_idx][i] << 3);
 
         /* Write data over I2S queue */
         if (i2s_write(i2s_dev, data_buffer[block_i2s_idx], DATA_BUFFER_SIZE_8) < 0)

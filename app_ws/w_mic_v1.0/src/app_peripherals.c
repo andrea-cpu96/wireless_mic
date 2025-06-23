@@ -83,7 +83,7 @@ int adc_config(void)
     hadc.nrf_saadc_config.buffer_config.buffers_number = NUM_OF_BUFFERS;
     hadc.nrf_saadc_config.buffer_config.buffer_size = DATA_BUFFER_SIZE_16;
     hadc.nrf_saadc_config.saadc_event_handler = saadc_event_handler;
-    hadc.nrf_saadc_config.saadc_ch.channel_config.gain = ADC_GAIN_1_6;
+    hadc.nrf_saadc_config.saadc_ch.channel_config.gain = ADC_GAIN_4;
     hadc.nrf_saadc_config.saadc_ch.pin_p = NRF_SAADC_INPUT_AIN2;
 
     hadc.nrf_saadc_config.timer.timer_instance = NULL;      // Default
