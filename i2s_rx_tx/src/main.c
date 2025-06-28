@@ -37,15 +37,24 @@ int main(void)
     /* Trigger start*/
     i2s_trigger_txrx(&hi2s);
 
+    /* Bare metal settings
+     *
+     *  NOTE1; these settings are not possible with
+     *        Zephyr APIs.
+     *
+     *  NOTE2; these settings must be set after i2s_trigger_txrx() to have effect.
+     */
+    NRF_I2S0->CONFIG.MCKFREQ = 0x49249000; // Calculated via script octave
+    NRF_I2S0->CONFIG.RATIO = 7;            // 384 (stick to octave calculations)
+
     while (1)
     {
         /* RX and TX continuosly */
         continue_transfer(&hi2s);
 
         /* Required time to end the transmission */
-        k_sleep(K_MSEC(BUFFER_BLOCK_TIME_MS - 1));
+        k_sleep(K_MSEC(BUFFER_BLOCK_TIME_MS - 1)); // Probably non needed (i2s_read() Zephyr API blocks the thread untill new blocks are availables)
     }
-
     return 0;
 }
 
@@ -98,7 +107,7 @@ static int start_transfer(i2s_drv_config_t *hi2s)
             return -1;
         }
 
-        memset(mem_block, 0, BLOCK_SIZE);
+        memset(mem_block, 1, BLOCK_SIZE);
 
         if (i2s_write(hi2s->dev_i2s, mem_block, BLOCK_SIZE) < 0)
         {

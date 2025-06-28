@@ -7,9 +7,9 @@
 
 /* I2S defines */
 #define CHANNELS_NUMBER 2
-#define SAMPLE_FREQ 8000
-#define I2S_WORD_BYTES 4
-#define I2S_RX_DELAY 2000
+#define SAMPLE_FREQ 9800  // Calculated via script octave
+#define I2S_WORD_BYTES 4  // 32 bits word
+#define I2S_RX_DELAY 2000 // After this time, i2s_read and i2s_write gives an error
 
 /* Buffer defines */
 #define BUFFER_BLOCK_TIME_MS 100

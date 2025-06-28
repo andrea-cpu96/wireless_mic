@@ -43,7 +43,6 @@ int i2s_drv_txrx(i2s_drv_config_t *hi2s)
         printk("Failed to write data\n");
         return -1;
     }
-
     return 0;
 }
 
