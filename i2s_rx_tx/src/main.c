@@ -2,16 +2,19 @@
 #include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
 /* Standard C libraries */
 #include <stdio.h>
 /* Debug support */
 #include <zephyr/sys/printk.h>
-/* Support */
-#include <math.h>
 
 #include "i2s_txrx.h"
+#include "ble_drv.h"
 
 #define I2S_DEBUG 0
+
+/* LED data structures */
+const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
 /* I2S data structures */
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
@@ -22,14 +25,28 @@ static int i2s_rxtx_init(void);
 static int start_transfer(i2s_drv_config_t *hi2s);
 static int continue_transfer(i2s_drv_config_t *hi2s);
 
+static int led_init(void);
+
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
 int main(void)
 {
+    /* LED init */
+    led_init();
+
     /* I2S init */
     i2s_rxtx_init();
 
+    /* BLE init */
+    ble_init();
+
     k_sleep(K_MSEC(500));
+
+    /* Start peripheral advertising */
+    ble_start_adv();
+
+    /* Signal advertising is started */
+    gpio_pin_set(led.port, led.pin, 1);
 
     /* Start the transmission */
     start_transfer(&hi2s); // I2S peripheral needs at least 2 blocks ready before the trigger start
@@ -44,16 +61,13 @@ int main(void)
      *
      *  NOTE2; these settings must be set after i2s_trigger_txrx() to have effect.
      */
-    NRF_I2S0->CONFIG.MCKFREQ = 0x49249000; // Calculated via script octave
+    NRF_I2S0->CONFIG.MCKFREQ = 0x6B20F000; // Calculated via script octave
     NRF_I2S0->CONFIG.RATIO = 7;            // 384 (stick to octave calculations)
 
     while (1)
     {
         /* RX and TX continuosly */
         continue_transfer(&hi2s);
-
-        /* Required time to end the transmission */
-        k_sleep(K_MSEC(BUFFER_BLOCK_TIME_MS - 1)); // Probably non needed (i2s_read() Zephyr API blocks the thread untill new blocks are availables)
     }
     return 0;
 }
@@ -132,5 +146,22 @@ static int continue_transfer(i2s_drv_config_t *hi2s)
     int free_blocks = k_mem_slab_num_free_get(&rxtx_mem_slab);
     printk("Blocchi slab disponibili: %d\n", free_blocks);
 #endif
+    return 1;
+}
+
+/**
+ * @brief led_init
+ * 
+ * @return int 
+ */
+int led_init(void)
+{
+    if(!gpio_is_ready_dt(&led))
+    {
+        return 0;
+    }
+
+    gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+
     return 1;
 }

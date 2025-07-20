@@ -15,7 +15,7 @@
 int i2s_config(i2s_drv_config_t *hi2s)
 {
     if (i2s_configure(hi2s->dev_i2s, hi2s->i2s_cfg_dir, hi2s->i2s_cfg) < 0)
-    { 
+    {
         printf("Failed to configure I2S\n");
         return -1;
     }
@@ -33,16 +33,26 @@ int i2s_drv_txrx(i2s_drv_config_t *hi2s)
     uint32_t block_size;
 
     if (i2s_read(hi2s->dev_i2s, &mem_block, &block_size) < 0)
-    {
-        printk("Failed to read data\n");
         return -1;
+
+    int32_t *pmem = (int32_t *)mem_block;
+    int size = block_size / sizeof(int32_t);
+
+    for (int i = 0; i < size; i++)
+    {
+        if ((pmem[i] <= MAX_LIMIT) && (pmem[i] >= MIN_LIMIT))
+        {
+            pmem[i] <<= AMP_FACTOR;
+        }
+        else
+        {
+            pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
+        }
     }
 
     if (i2s_write(hi2s->dev_i2s, mem_block, block_size) < 0)
-    {
-        printk("Failed to write data\n");
         return -1;
-    }
+
     return 0;
 }
 

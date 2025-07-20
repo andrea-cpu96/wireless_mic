@@ -6,6 +6,7 @@ project(i2s_rx_tx)
 target_sources(app PRIVATE 
     src/main.c
     src/i2s_txrx.c
+    src/ble_drv.c
 )
 
 zephyr_library_include_directories(

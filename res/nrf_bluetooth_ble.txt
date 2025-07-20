@@ -1,0 +1,186 @@
+BLUETOOTH BLE IN NRF MICROCONTROLLERS
+
+1) Bluetooth is a widely used wireless communication technology standard managed by the Bluetooth Special Interest Group (SIG).
+
+(NOTE; The acronym "SIG" is widely recognized and used across many standards organizations (for example, USB-IF for USB Implementers Forum, PCI-SIG for PCI Special Interest Group)).
+
+2)There are two types of bluetooth standards; bluetooth classic and bluetooth BLE.
+  
+    -The BLE standard differs from the classic because of the lower data rate and thus the lower power consumption.
+
+3) Nordic products only use bluetooth BLE.
+
+4) BLE specs; 
+    
+    -Data packets; ranging from 27 to 251 bytes.
+    -Operating band; 2400 MHz - 2483.5 MHz (2.4 GHz).
+    -Channel bandwidth; 2 MHz.
+    -Number of channels; 40.
+    -Max power TX; 20 dBm.
+    -Max data throughput; 1.4 Mbps
+
+5) BLE stack layers;
+
+    -APPLICATION; is the layer where the user can use the BLE APIs.
+    -HOST; is the layer that determines how BLE devices exchange data between each other.
+    -CONTROLLER; is the layer that makes up the physical part of the BLE connection.
+
+6) HOST layers;
+
+        -GAP (Generic Access Profile); interfaces directly with the application layer to handle device discovery and connection-related services. 
+        -GATT (Generic Attribute Profile); defines the necessary sub-procedures for using the ATT layer.
+        -ATT (Attribute protocol); allows a device to expose certain pieces of data to other devices. 
+        -SMP (Secure Manager Protocol); provides secure communication.
+        -L2CAP (Logical Link Control & Adaptation Protocol); provides data encapsulation services.
+
+7) CONTROLLER layers;
+
+        -LL (Lynk Layer); manages the state machine and logic of the BLE radio communication peripheral. 
+        -PHY (Physical layer); defines data modulations and tx and rx specs.
+
+8) BLE library;
+
+        -SoftDevice Controller; is the nordik BLE lirary.
+        -link; https://docs.nordicsemi.com/bundle/ncs-latest/page/nrfxlib/softdevice_controller/README.html
+
+9) GAP (Generic Access Profile);
+
+        -Defines the device roles for nodes in a BLE network.
+        -Peripheral; is the role of the device that ADVERTISES its presence to create a connection.
+        -Central; is the role of the device that SCANS for advertisement packets.
+                  If the central decides to send a CONNECTION REQUEST, then the connection is established.
+
+        NOTE; other roles are BROADCASTER and OBSERVER, for these roles no connection is established.
+
+10) ATT & GATT;
+
+        -After establishing a connection, the data exchanges are managed by these layers.
+        -ATT (Attribute); defines a client-server architecture, where the server holds the data.
+         It can either send it directly to the client or the client can poll the data from the server by itself.
+         The ATT defines data structures called ATTRIBUTES, that are used by the GATT server to store data.
+        -GATT (Generic Attribute); is the one that uses these roles provided by the ATT.
+         It builds on the ATT layer by hyerarchically classifying attributes into PROFILES, SERVICES and CHARACTERISTICS.
+         It handles the data transfer according to these classifications.
+
+        NOTE; we talk about GATT SERVER and GATT CLIENT.
+        NOTE; usually the peripheral is the server, while the central is the client.
+
+        -PROFILE; is an object that contains one or more services that are related to a common use case.
+        -SERVICE; is an object that contains characteristics that have a sort of relationship to each others.
+        -CHARACTERISTIC; is an object that contains attributes.
+        -ATTRIBUTES; are defined by the ATT layer and are data structures that contain the actual data.
+
+        NOTE; profiles, services and characteristics are defined by the GATT layer, while the attributes are defined by the ATT layer.
+
+        -SERVICE DISCOVERY; is when the client ask to the server for its attributes.
+
+        -link GATT profiles; https://www.bluetooth.com/specifications/specs/
+
+11) PHY layer;
+
+        -1M PHY; 1 Mbps data rate.
+        -2M PHY; 2 Mbps data rate.
+        -CODED PHY; longer range communication with error recovery 125-500 kbps
+
+12) ADVERTISING;
+
+        -advertising interval; 20 ms to 10.24 s (steps of 0.635 ms).
+        -random delay; 0-10 ms delay is added to avoid collision.
+        -primary advertising channels; channels 37, 38 and 39 are all used to advertise.
+        -scan interval; similar to advertising interval.
+        -scan window; time the that device spends to scan for advertising packets at each scan interval.
+
+        NOTE; the scanner rotate through the 3 different channels every scan interval.
+        NOTE; the advertiser send the packet to all the 3 different channels every advertising interval.
+
+        -The central can send a scan request to the peripheral to obtain additional information.
+        -The peripheral can accept the request and send a scan response.
+
+        NOTE; here the connection is not still created and the information are all via the 3 advertising channels.
+
+
+13) ADVERTISING TYPES;
+
+        -ADV_IND; scannable and connectable.
+        -ADV_DIRECT_IND; directed connectable. 
+        -ADV_SCAN_IND; non-connectable and scannable.
+        -ADV_NONCONN_IND; non-connectable and non-scannable.
+
+14) BLUETOOTH ADDRESS;
+
+        -48 bits unique address.
+        -PUBBLIC ADDRESS; is fixed by the manufacturer and must be registered with the IEEE registration authority
+        -RANDOM ADDRESS; doesn't require any registration. 
+                         If STATIC must be fixed during the runtime.
+                         If PRIVATE RESOLVABLE it periodically changes randomly and the listener have a pre-shared key to resolve it every time.
+                         If PRIVATE NON-RESOLVABLE it periodically changes randomly and cannot be resolved.  
+                                                   This is the default type of address set for non-connectable advertising. 
+
+        NOTE; The public address assigned to a device is drawn
+        out of the same IEEE address pool as MAC addresses (e.g. for ethernet, Wi-Fi) and therefore 
+        it is also commonly referred to as a Bluetooth MAC address.
+
+15) ADVERTISING PACKET;
+
+        -PREAMBLE; 1 Byte.
+        -ACCESS ADDRESS; 4 Bytes.
+        -ADVERTISING PDU (Protocol Data Unit); 2-39 Bytes.
+                          It has a HEADER (2 Bytes) and a PAYLOAD (0-37 Bytes).
+        -CRC; 3 Bytes.
+
+        NOTE; inside the PDU header there are the information related to the advertising type and channel.
+        NOTE; the bluetooth address of the advertising device is inside the PDU payload in a field called AdvA.
+
+        -The PDU payload has fields named AD that have inside the data and also the data type.
+
+16) ADVERTISING PACKET DATA TYPE (AD type);
+
+        -BT_DATA_NAME_COMPLETE; complete local name.
+        -BT_DATA_NAME_SHORTENED; shortened local name.
+        -BT_DATA_URI; Uniform Resource Identifier (ex. website addresses URLs).
+        -BT_DATA_MANUFACTURER_DATA; manufacturer specific data.
+        -Service UUID; Service Universally Unique Identifier.
+        -Flags; 1 bit variables.
+
+        -Flags;
+            -BT_LE_AD_LIMITED; sets LE limited discoverable mode.
+            -BT_LE_AD_GENERAL; sets LE general discoverable mode.
+            -BT_LE_AD_NO_BREDR; indicates that classic bluetooth is not supported.
+
+17) BLE CONNECTION
+
+        -After each advertising interval, the peripheral has a short slot of time in whih it is
+         available to receive a connection request.
+        -After accepting the connection request, the peripheral can transmit data through the other
+         37 channels.
+        -BLE uses channel hopping to make the connection more reliable.
+        -To ensure data integrity, all packets transmitted over Bluetooth LE will be retried infinitely
+         until an acknowledgment is received or the connection is terminated.
+        -CONNECTION INTERVAL; is the time the connected devices agree on sleeping time interval and data exchange interval.
+        -CONNECTION EVENT; is an event happening every connection interval, when the central sends a packet to the peripheral. 
+        -SUPERVISION TIMEOUT; is the amount of time it takes between successfully receiving the last packet before the connection
+         is considered lost. 
+        -MTU (Max Transfer Unit); is the number of bytes that can be sent in one GATT operation.
+        -DATA LENGTH; is the number of bytes that can be sent in one bluetooth LE packet.
+
+        NOTE; Peripheral can request to change the connection parameters, but it is always the central that has the final say with these requests.
+
+        NOTE; Even if there is no useful data to send, the peers need to send empty packets to sync their clocks. 
+        If you want to send more data than there is time for in one connection interval, it will be split over several connection intervals.
+
+        NOTE; If MTU is larger than data length, the data will be segmented into chunks of the data length's size. 
+
+        NOTE; On air, the data length can be up to 251 bytes, while the actual payload that you can send is a maximum of 244 bytes.
+        This is because the 251 byte Data PDU payload needs an L2CAP Header of 4 bytes, and an Attribute header of 3 bytes. 
+        This leaves you with 251 – 4 – 3 = 244 bytes that you can actually populate with payload data.
+
+18) DATA PACKET
+
+        -Header; 2 bytes.
+        -Payload; 0 - 254 bytes.
+                -L2CAP header; 4 bytes.
+                -ATT header; 3 bytes.
+                -ATT data; 0 - 254 bytes.
+        -MIC; 4 bytes.
+
+
