@@ -55,6 +55,11 @@ LOG_MODULE_REGISTER(ble_logs, LOG_LEVEL_INF);
 static struct k_work adv_work;
 
 /**
+ * @brief Bluetooth connection element
+ */
+struct bt_conn *my_conn = NULL;
+
+/**
  * @brief Advertising data
  *
  * @note in BT_DATA_BYTES after type, each entry is a single byte
@@ -82,13 +87,17 @@ static const struct bt_data sd[] = {
 static void adv_work_handler(struct k_work *work);
 static void advertising_start(void);
 static void recycled_cb(void);
+static void on_connected_cb(struct bt_conn *conn, uint8_t err);
+static void on_disconnected_cb(struct bt_conn *conn, uint8_t reason);
 
 /**
  * @brief assign callback functions to bluetooth events
  *
  */
 BT_CONN_CB_DEFINE(conn_callbacks) = {
-    .recycled = recycled_cb, // post bt disconnection callback
+    .connected = on_connected_cb,       // post bt connection callback
+    .disconnected = on_disconnected_cb, // post bt disconnection callback
+    .recycled = recycled_cb,            // post bt disconnection callback
 };
 
 /**
@@ -158,16 +167,6 @@ static void advertising_start(void)
 }
 
 /**
- * @brief recycled_cb
- *
- */
-static void recycled_cb(void)
-{
-    LOG_INF("Connection object available from previous conn. Disconnect is complete!\n");
-    advertising_start();
-}
-
-/**
  * @brief restart advertising after disconnection
  *
  * @param work
@@ -180,4 +179,37 @@ static void adv_work_handler(struct k_work *work)
         LOG_ERR("Advertising failed to start (err %d)\n", err);
         return;
     }
+}
+
+/**
+ * @brief recycled_cb
+ *
+ */
+static void recycled_cb(void)
+{
+    LOG_INF("Connection object available from previous conn. Disconnect is complete!\n");
+    advertising_start();
+}
+
+/**
+ * @brief on_connected_cb
+ */
+static void on_connected_cb(struct bt_conn *conn, uint8_t err)
+{
+    if (err)
+    {
+        LOG_ERR("Connection error %d", err);
+        return;
+    }
+    LOG_INF("Connected");
+    my_conn = bt_conn_ref(conn);
+}
+
+/**
+ * @brief on_disconnected_cb
+ */
+static void on_disconnected_cb(struct bt_conn *conn, uint8_t reason)
+{
+    LOG_INF("Disconnected. Reason %d", reason);
+    bt_conn_unref(my_conn);
 }
