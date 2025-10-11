@@ -36,19 +36,8 @@ int i2s_drv_txrx(i2s_drv_config_t *hi2s)
         return -1;
 
     int32_t *pmem = (int32_t *)mem_block;
-    int size = block_size / sizeof(int32_t);
-
-    for (int i = 0; i < size; i++)
-    {
-        if ((pmem[i] <= MAX_LIMIT) && (pmem[i] >= MIN_LIMIT))
-        {
-            pmem[i] <<= AMP_FACTOR;
-        }
-        else
-        {
-            pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
-        }
-    }
+    
+    hi2s->i2s_elab(pmem, block_size);
 
     if (i2s_write(hi2s->dev_i2s, mem_block, block_size) < 0)
         return -1;

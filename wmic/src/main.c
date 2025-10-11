@@ -8,10 +8,9 @@
 /* Debug support */
 #include <zephyr/sys/printk.h>
 
+#include "config.h"
 #include "i2s_txrx.h"
 #include "ble_drv.h"
-
-#define I2S_DEBUG 0
 
 /* LED data structures */
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
@@ -26,6 +25,7 @@ static int start_transfer(i2s_drv_config_t *hi2s);
 static int continue_transfer(i2s_drv_config_t *hi2s);
 
 static int led_init(void);
+static void data_elab(int32_t *pmem, uint32_t block_size);
 
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
@@ -61,7 +61,7 @@ int main(void)
      *
      *  NOTE2; these settings must be set after i2s_trigger_txrx() to have effect.
      */
-    NRF_I2S0->CONFIG.MCKFREQ = 0x6B20F000; // Calculated via script octave
+    NRF_I2S0->CONFIG.MCKFREQ = 0x6318C000; // Calculated via script octave
     NRF_I2S0->CONFIG.RATIO = 7;            // 384 (stick to octave calculations)
 
     while (1)
@@ -90,6 +90,7 @@ static int i2s_rxtx_init(void)
     hi2s.dev_i2s = i2s_dev;
     hi2s.i2s_cfg_dir = I2S_DIR_BOTH;
     hi2s.i2s_cfg = &i2s_cfg_local;
+    hi2s.i2s_elab = data_elab;
 
     i2s_cfg_local.word_size = I2S_WORD_BYTES * 8;
     i2s_cfg_local.channels = CHANNELS_NUMBER;
@@ -151,12 +152,12 @@ static int continue_transfer(i2s_drv_config_t *hi2s)
 
 /**
  * @brief led_init
- * 
- * @return int 
+ *
+ * @return int
  */
 int led_init(void)
 {
-    if(!gpio_is_ready_dt(&led))
+    if (!gpio_is_ready_dt(&led))
     {
         return 0;
     }
@@ -164,4 +165,24 @@ int led_init(void)
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
 
     return 1;
+}
+
+static void data_elab(int32_t *pmem, uint32_t block_size)
+{
+    int size = block_size / sizeof(int32_t);
+
+    const float max = MAX_LIMIT;
+    const float min = MIN_LIMIT;
+
+    for (int i = 0; i < size; i++)
+    {
+        if ((pmem[i] <= max) && (pmem[i] >= min))
+        {
+            pmem[i] <<= AMP_FACTOR;
+        }
+        else
+        {
+            pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
+        }
+    }
 }
