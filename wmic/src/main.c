@@ -12,6 +12,8 @@
 #include "i2s_txrx.h"
 #include "ble_drv.h"
 
+//#include "sw_codec_lc3.h"
+
 /* LED data structures */
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
@@ -20,25 +22,40 @@ const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 i2s_drv_config_t hi2s;
 static struct i2s_config i2s_cfg_local = {0};
 
+/* Callback functions */
+static void data_elab_cb(int32_t *pmem, uint32_t block_size);
+
+/* Init functions */
+static int led_init(void);
+static int audio_init(void);
 static int i2s_rxtx_init(void);
+
+/* Streaming functions */
 static int start_transfer(i2s_drv_config_t *hi2s);
 static int continue_transfer(i2s_drv_config_t *hi2s);
 
-static int led_init(void);
-static void data_elab(int32_t *pmem, uint32_t block_size);
+/* Error handler function */
+static void err_handler(void);
 
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
 int main(void)
 {
     /* LED init */
-    led_init();
+    if (led_init() < 0)
+        err_handler();
+
+    /* Audio init */
+    if (audio_init() < 0)
+        err_handler();
 
     /* I2S init */
-    i2s_rxtx_init();
+    if (i2s_rxtx_init() < 0)
+        err_handler();
 
     /* BLE init */
-    ble_init();
+    if (ble_init() < 0)
+        err_handler();
 
     k_sleep(K_MSEC(500));
 
@@ -73,6 +90,41 @@ int main(void)
 }
 
 /**
+ * @brief led_init
+ *
+ * @return int
+ */
+static int led_init(void)
+{
+    if (!gpio_is_ready_dt(&led))
+    {
+        return 0;
+    }
+
+    gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+
+    return 1;
+}
+
+static int audio_init(void)
+{
+ //   static struct sw_codec_config _sw_codec_config;
+    int ret = 0;
+/*
+    _sw_codec_config.sw_codec = SW_CODEC_LC3;
+
+    _sw_codec_config.encoder.bitrate = CONFIG_LC3_MONO_BITRATE;
+    _sw_codec_config.encoder.channel_mode = SW_CODEC_STEREO;
+    _sw_codec_config.encoder.enabled = true;
+
+    ret = sw_codec_init(_sw_codec_config);
+
+    _sw_codec_config.initialized = true;
+*/
+    return ret;
+}
+
+/**
  * @brief i2s_rxtx_init
  *
  * @return int
@@ -90,7 +142,7 @@ static int i2s_rxtx_init(void)
     hi2s.dev_i2s = i2s_dev;
     hi2s.i2s_cfg_dir = I2S_DIR_BOTH;
     hi2s.i2s_cfg = &i2s_cfg_local;
-    hi2s.i2s_elab = data_elab;
+    hi2s.i2s_elab = data_elab_cb;
 
     i2s_cfg_local.word_size = I2S_WORD_BYTES * 8;
     i2s_cfg_local.channels = CHANNELS_NUMBER;
@@ -150,24 +202,7 @@ static int continue_transfer(i2s_drv_config_t *hi2s)
     return 1;
 }
 
-/**
- * @brief led_init
- *
- * @return int
- */
-int led_init(void)
-{
-    if (!gpio_is_ready_dt(&led))
-    {
-        return 0;
-    }
-
-    gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
-
-    return 1;
-}
-
-static void data_elab(int32_t *pmem, uint32_t block_size)
+static void data_elab_cb(int32_t *pmem, uint32_t block_size)
 {
     int size = block_size / sizeof(int32_t);
 
@@ -185,4 +220,10 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
             pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
         }
     }
+}
+
+static void err_handler(void)
+{
+    while (1)
+        ;
 }

@@ -3,6 +3,8 @@
         "${workspaceFolder}\\wmic"
     ],
     "files.associations": {
-        "nrf_adc_drv.h": "c"
+        "nrf_adc_drv.h": "c",
+        "i2s_txrx.h": "c",
+        "config.h": "c"
     }
 }

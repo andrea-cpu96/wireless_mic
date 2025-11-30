@@ -11,4 +11,12 @@ target_sources(app PRIVATE
 
 zephyr_library_include_directories(
   src/
+  src/audio
+  src/bluetooth
+  src/utils
+  src/utils/macros
 )
+
+add_subdirectory(src/audio)
+#add_subdirectory(src/bluetooth)
+#add_subdirectory(src/utils)
