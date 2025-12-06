@@ -38,12 +38,12 @@ int main(void)
     i2s_rxtx_init();
 
     /* BLE init */
-    ble_init();
+    //ble_init();
 
     k_sleep(K_MSEC(500));
 
     /* Start peripheral advertising */
-    ble_start_adv();
+    //ble_start_adv();
 
     /* Signal advertising is started */
     gpio_pin_set(led.port, led.pin, 1);
@@ -98,7 +98,7 @@ static int i2s_rxtx_init(void)
     i2s_cfg_local.frame_clk_freq = SAMPLE_FREQ;
     i2s_cfg_local.block_size = BLOCK_SIZE;
     i2s_cfg_local.timeout = I2S_RX_DELAY; // This is the max read delay before the i2s_read fails
-    i2s_cfg_local.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER;
+    i2s_cfg_local.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER; // Set the microcontroller as I2S master and generator of MCK and BCK
     i2s_cfg_local.mem_slab = &rxtx_mem_slab;
 
     return i2s_config(&hi2s);

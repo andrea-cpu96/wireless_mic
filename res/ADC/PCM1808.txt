@@ -1,0 +1,13 @@
+Il PCM1808 è un ADC che prende come ingresso un segnale analogico e come uscita fornisce un segnale digitale via I2S.
+
+SPECIFICHE UTENTE
+
+1) Delta sigma ADC
+2) Single ended input a 3Vpp
+3) Master o slave I2S
+4) 24 bit data left justify
+5) Sampling rate 8kHz a 96kHz
+6) MCK rate 256, 384 o 512
+7) Stereo
+8) High pass filter in input 
+9) Banda 0,454*fs

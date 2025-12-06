@@ -1,0 +1,16 @@
+Il PCM5102A é un DAC che prende in ingresso segnali I2S e fornisce in uscita un output LR analogico.
+
+La differenza con il PCM5102 é che la versione A é compatibile sia con livelli logici a 1.8V che 3.3V.
+
+SPECIFICHE UTENTE
+
+1) Il chip ha un PLL interno con riferimento BCK con il quale può costruire il segnale SCK.
+2) Il chip ha una uscita a livello di linea fino a 2Vrms (il livello di linea sta fra 1-2Vrms).
+3) L'uscita del chip é senza componente DC, dunque non richiede DC-blocking capacitor in uscita.
+4) L'uscita del chip può essere collegata a carichi fino a 1k senza problemi. 
+5) Il chip ha un sistema di muting intelligente che disabilita l'uscita in assenza di audio e senza pop. 
+6) Il chip accetta ingressi data a 16, 24 o 32 bit.
+7) Il PCM data format accettato é I2S left-justified.
+8) Fs fra 8kHz e 384kHz
+9) MCK rate  64, 128, 192, 256, 384, 512, 768, 1024, 1152, 1536, 2048, or 3072
+10) Banda 0,454*fs
