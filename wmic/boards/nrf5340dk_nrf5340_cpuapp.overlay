@@ -20,6 +20,13 @@
 	clock-source = "PCLK32M_HFXO";
 };
 
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	reg = <0x8000 0x1000>;
+	interrupts = <8 NRF_DEFAULT_IRQ_PRIORITY>;
+	status = "okay";
+};
+
 /*
 &clock {
 	hfclkaudio-frequency = <11289600>;

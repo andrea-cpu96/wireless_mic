@@ -1,5 +1,5 @@
 % User settings
-fs_req = 40000;
+fs_req = 8000;
 source = 32000000;
 ratio = 384;
 MCK_req = ratio*fs_req;

@@ -1,13 +1,13 @@
-f_arr = zeros(1, 8001);
-MCK_err_arr = zeros(1, 8001);
-fs_err_arr = zeros(1, 8001);
+f_arr = zeros(1, 88001);
+MCK_err_arr = zeros(1, 88001);
+fs_err_arr = zeros(1, 88001);
 
 i = 0;
-for f = 8000:1:16000
+for f = 8000:1:96000
 
   % User settings
   fs_req = f;
-  source = 11289600;
+  source = 32000000;
   ratio = 384;
   MCK_req = ratio*fs_req;
 

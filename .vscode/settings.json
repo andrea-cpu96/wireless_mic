@@ -4,5 +4,6 @@
     ],
     "files.associations": {
         "nrf_adc_drv.h": "c"
-    }
+    },
+    "cmake.sourceDirectory": "D:/Andrea/Embedded/repositories/wireless_mic/wmic"
 }
