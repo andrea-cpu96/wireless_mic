@@ -5,15 +5,17 @@ project(wmic)
 
 target_sources(app PRIVATE 
     src/main.c
-    src/i2s_txrx.c
-    src/ble_drv.c
-    src/low_pass_filter.c
-    src/signals.c
-    src/bt1036c_drv.c
+    src/audio/audio.c
+    src/filters/low_pass_filter.c
+    src/filters/signals.c
+    src/bt1036c/bt1036c_drv.c
 )
 
 zephyr_library_include_directories(
   src/
+  src/bt1036c/
+  src/filters/
+  src/audio/
 )
 
 # Include the local CMSIS-DSP headers and compile only needed sources

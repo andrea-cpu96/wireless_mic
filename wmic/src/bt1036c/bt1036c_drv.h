@@ -6,13 +6,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define BT103036C_CONFIG_TX 0
+#define BT103036C_CONFIG_RX 1
+
 #define A2DP_SOURCE_PROFILE "339"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void bt1036c_config(struct device *uart);
+void bt1036c_config(const struct device *uart, const uint8_t txrx_config);
 void bt1036c_at_send(const char *cmd);
 
 #ifdef __cplusplus

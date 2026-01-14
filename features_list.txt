@@ -1,0 +1,6 @@
+BT MODULE
+
+1) Avoid hardcoded MACs, read it from data structure
+2) Possibility dor the user to select the peripheral to connect via display and buttons (optional)
+3) DSP advanced functions
+4) User interaction to elaboration via buttons
