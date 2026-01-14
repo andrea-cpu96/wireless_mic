@@ -18,20 +18,20 @@ zephyr_library_include_directories(
   src/audio/
 )
 
-# Include the local CMSIS-DSP headers and compile only needed sources
+# Include the local CMSIS_DSP headers and compile only needed sources
 zephyr_library_include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS-DSP/Include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS-DSP/PrivateInclude
+  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS_DSP/Include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS_DSP/PrivateInclude
 )
 
-# Compile only CMSIS-DSP Filtering Functions (FIR) and Support Functions needed
+# Compile only CMSIS_DSP Filtering Functions (FIR) and Support Functions needed
 file(GLOB CMSIS_DSP_FILTERING_SOURCES 
-  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS-DSP/Source/FilteringFunctions/arm_fir*.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS_DSP/Source/FilteringFunctions/arm_fir*.c
 )
 
 file(GLOB CMSIS_DSP_SUPPORT_SOURCES 
-  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS-DSP/Source/SupportFunctions/arm_*_f32.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS-DSP/Source/SupportFunctions/arm_*_q15.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS_DSP/Source/SupportFunctions/arm_*_f32.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/../modules/CMSIS_DSP/Source/SupportFunctions/arm_*_q15.c
 )
 
 target_sources(app PRIVATE ${CMSIS_DSP_FILTERING_SOURCES} ${CMSIS_DSP_SUPPORT_SOURCES})
