@@ -167,6 +167,15 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     dsp_filter(pmem, size);
 #endif // ENABLE_DSP_FILTER
 
+#if (ENABLE_STEREO_DIFF)
+    for (int i = 0; i < size; i += 2)
+    {
+        int32_t diff = pmem[i + 1] - pmem[i];  // right - left
+        pmem[i] = diff;      
+        pmem[i + 1] = diff;  
+    }
+#endif // ENABLE_STEREO_DIFF
+
     for (int i = 0; i < size; i++)
     {   
         if ((pmem[i] <= max) && (pmem[i] >= min))
@@ -203,13 +212,35 @@ static void dsp_filter(int32_t *pmem, uint32_t size)
     q15_t data_q15;
     q15_t out;
 
-    for (int i = 0; i < size; i++)
+#if (ENABLE_STEREO_DIFF)
+    for (int i = 0; i < size; i += 2)
+    {
+        data_f32 = ((pmem[i])/(float32_t)2147483648);
+        arm_float_to_q15(&data_f32, &data_q15, 1);
+        lowpass_filter_exc(&data_q15, &out);
+        int32_t filtered = (int32_t)(out * (2147483648/32768)*10);
+        pmem[i] = filtered;      // Left channel
+        pmem[i + 1] = filtered;  // Right channel
+    }
+#else
+    // Left channel
+    for (int i = 0; i < size; i += 2)
     {
         data_f32 = ((pmem[i])/(float32_t)2147483648);
         arm_float_to_q15(&data_f32, &data_q15, 1);
         lowpass_filter_exc(&data_q15, &out);
         pmem[i] = (int32_t)(out * (2147483648/32768)*10);
     }
+
+    // Right channel
+    for (int i = 1; i < size; i += 2)
+    {
+        data_f32 = ((pmem[i])/(float32_t)2147483648);
+        arm_float_to_q15(&data_f32, &data_q15, 1);
+        lowpass_filter_exc(&data_q15, &out);
+        pmem[i] = (int32_t)(out * (2147483648/32768)*10);
+    }
+#endif // ENABLE_STEREO_DIFF
 
     return;
 }

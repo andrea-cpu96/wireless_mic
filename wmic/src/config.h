@@ -2,6 +2,7 @@
 
 #define TXRX_MODULE BT103036C_CONFIG_TX // (0, TX) ; (1, RX)
 #define ENABLE_DSP_FILTER false
+#define ENABLE_STEREO_DIFF flase
 
 /* Audio defines */
 #define AMP_FACTOR 8 // NOTE; I2S data are 32 bit in size, only 24 lower bit are valid, but bt module considers only 16 higher bit in a 32 bit data, so set a shift of 8 bit
