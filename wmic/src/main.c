@@ -39,7 +39,7 @@ static void bt_init(void);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
-static void dsp_filter(void);
+static void dsp_filter(int32_t *pmem, uint32_t size);
 #endif // ENABLE_DSP_FILTER
 
 static void data_elab(int32_t *pmem, uint32_t block_size);
@@ -164,7 +164,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     int size = block_size / sizeof(int32_t);
 
 #if (ENABLE_DSP_FILTER)    
-    dsp_filter();
+    dsp_filter(pmem, size);
 #endif // ENABLE_DSP_FILTER
 
     for (int i = 0; i < size; i++)
@@ -188,7 +188,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
  */
 static void dsp_filter_init(void)
 {
-    lowpass_filter_init(); 
+    lowpass_filter_init(1);  // block_len = 1
     return; 
 }
 
@@ -197,16 +197,19 @@ static void dsp_filter_init(void)
  *
  * @return void
  */
-static void dsp_filter(void)
+static void dsp_filter(int32_t *pmem, uint32_t size)
 {
     float32_t data_f32 = 0.0;
     q15_t data_q15;
+    q15_t out;
 
-    data_f32 = ((pmem[i])/(float32_t)2147483648);
-
-    arm_float_to_q15(&data_f32, &data_q15, 1);
-
-    pmem[i] = (int32_t)(lowpass_filter_exc(&data_q15) * (2147483648/32768)*10);
+    for (int i = 0; i < size; i++)
+    {
+        data_f32 = ((pmem[i])/(float32_t)2147483648);
+        arm_float_to_q15(&data_f32, &data_q15, 1);
+        lowpass_filter_exc(&data_q15, &out);
+        pmem[i] = (int32_t)(out * (2147483648/32768)*10);
+    }
 
     return;
 }

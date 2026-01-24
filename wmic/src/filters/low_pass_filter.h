@@ -10,7 +10,9 @@
 
 #include <arm_math.h>
 
-void lowpass_filter_init(void);
-q15_t lowpass_filter_exc(q15_t *input);
+#define MAX_BLOCK_LEN 16
+
+void lowpass_filter_init(uint16_t block_len);
+void lowpass_filter_exc(q15_t *input, q15_t *out);
 
 #endif /* LOW_PASS_FILTER_H_ */
