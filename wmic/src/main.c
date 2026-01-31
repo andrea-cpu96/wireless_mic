@@ -4,7 +4,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
-#include <zephyr/sys/printk.h> 
+#include <zephyr/sys/printk.h>
 /* Standard C libraries */
 #include <stdio.h>
 #if (ENABLE_DSP_FILTER)
@@ -17,6 +17,7 @@
 #if (ENABLE_DSP_FILTER)
 #include "low_pass_filter.h"
 #endif // ENABLE_DSP_FILTER
+#include "signals.h"
 
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
@@ -73,7 +74,7 @@ int main(void)
 
     while (1)
     {
-        k_sleep(K_FOREVER);
+        k_sleep(K_MSEC(500));
     }
     return 0;
 }
@@ -103,7 +104,7 @@ static int audio_init(void)
     i2s_cfg_local.format = I2S_FMT_DATA_FORMAT_I2S;
     i2s_cfg_local.frame_clk_freq = SAMPLE_FREQ;
     i2s_cfg_local.block_size = BLOCK_SIZE;
-    i2s_cfg_local.timeout = I2S_RX_DELAY; // This is the max read delay before the i2s_read fails
+    i2s_cfg_local.timeout = I2S_RX_DELAY;                                      // This is the max read delay before the i2s_read fails
     i2s_cfg_local.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER; // Set the microcontroller as I2S master and generator of MCK and BCK
     i2s_cfg_local.mem_slab = &rxtx_mem_slab;
 
@@ -163,21 +164,32 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 {
     int size = block_size / sizeof(int32_t);
 
-#if (ENABLE_DSP_FILTER)    
+#if (ENABLE_SIGNAL_GEN)
+    for (int i = 0; i < size; i = i + 2)
+    {
+        int index = (i / 2) % SIG_GEN_LEN;
+        pmem[i] = (int32_t)(signals_get_sample(index) * (float32_t)32767);
+        pmem[i] = (pmem[i] << 16);
+        pmem[i + 1] = pmem[i];
+    }
+#endif // ENABLE_SIGNAL_GEN
+
+#if (ENABLE_DSP_FILTER)
     dsp_filter(pmem, size);
 #endif // ENABLE_DSP_FILTER
 
 #if (ENABLE_STEREO_DIFF)
     for (int i = 0; i < size; i += 2)
     {
-        int32_t diff = pmem[i + 1] - pmem[i];  // right - left
-        pmem[i] = diff;      
-        pmem[i + 1] = diff;  
+        int32_t diff = pmem[i + 1] - pmem[i]; // right - left
+        pmem[i] = diff;
+        pmem[i + 1] = diff;
     }
 #endif // ENABLE_STEREO_DIFF
 
-    for (int i = 0; i < size; i++)
-    {   
+#if (!ENABLE_SIGNAL_GEN)
+    for (int i = 0; i < size; i = i + 2)
+    {
         if ((pmem[i] <= max) && (pmem[i] >= min))
         {
             pmem[i] <<= AMP_FACTOR;
@@ -187,6 +199,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
             pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
         }
     }
+#endif // !ENABLE_SIGNAL_GEN
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -196,9 +209,9 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
  * @return void
  */
 static void dsp_filter_init(void)
-{
-    lowpass_filter_init(1);  // block_len = 1
-    return; 
+{ 
+    lowpass_filter_init(1); // block_len = 1
+    return;
 }
 
 /**
@@ -215,30 +228,30 @@ static void dsp_filter(int32_t *pmem, uint32_t size)
 #if (ENABLE_STEREO_DIFF)
     for (int i = 0; i < size; i += 2)
     {
-        data_f32 = ((pmem[i])/(float32_t)2147483648);
+        data_f32 = ((pmem[i]) / (float32_t)2147483648);
         arm_float_to_q15(&data_f32, &data_q15, 1);
         lowpass_filter_exc(&data_q15, &out);
-        int32_t filtered = (int32_t)(out * (2147483648/32768)*10);
-        pmem[i] = filtered;      // Left channel
-        pmem[i + 1] = filtered;  // Right channel
+        int32_t filtered = (int32_t)(out * (2147483648 / 32768) * 10);
+        pmem[i] = filtered;     // Left channel
+        pmem[i + 1] = filtered; // Right channel
     }
 #else
     // Left channel
     for (int i = 0; i < size; i += 2)
     {
-        data_f32 = ((pmem[i])/(float32_t)2147483648);
+        data_f32 = ((pmem[i]) / (float32_t)2147483648);
         arm_float_to_q15(&data_f32, &data_q15, 1);
         lowpass_filter_exc(&data_q15, &out);
-        pmem[i] = (int32_t)(out * (2147483648/32768)*10);
+        pmem[i] = (int32_t)(out * (2147483648 / 32768) * 10);
     }
 
     // Right channel
     for (int i = 1; i < size; i += 2)
     {
-        data_f32 = ((pmem[i])/(float32_t)2147483648);
+        data_f32 = ((pmem[i]) / (float32_t)2147483648);
         arm_float_to_q15(&data_f32, &data_q15, 1);
         lowpass_filter_exc(&data_q15, &out);
-        pmem[i] = (int32_t)(out * (2147483648/32768)*10);
+        pmem[i] = (int32_t)(out * (2147483648 / 32768) * 10);
     }
 #endif // ENABLE_STEREO_DIFF
 
