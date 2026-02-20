@@ -11,7 +11,7 @@
 #include <arm_math.h>
 #include "signals.h"
 
-float32_t gen_signal[SIG_GEN_LEN] = {0.0};
+float32_t gen_signal[SIG_GEN_LEN] = {0x0000efff};
 
 float32_t signals_get_sample(int index)
 {

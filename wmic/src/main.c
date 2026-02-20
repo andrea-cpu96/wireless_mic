@@ -1,16 +1,15 @@
-/* System */
 #include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/sys/printk.h>
-/* Standard C libraries */
+
 #include <stdio.h>
 #if (ENABLE_DSP_FILTER)
 #include <arm_math.h>
 #endif // ENABLE_DSP_FILTER
-/* Project modules */
+
 #include "config.h"
 #include "audio.h"
 #include "bt1036c_drv.h"
@@ -21,15 +20,15 @@
 
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
-/* LED data structures */
+// LED data structures 
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
-/* I2S data structures */
+// I2S data structures 
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 i2s_drv_config_t hi2s;
 static struct i2s_config i2s_cfg_local = {0};
 
-/* UART data structures */
+// UART data structures 
 const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
 
 static int gpios_init(void);
@@ -50,26 +49,26 @@ const float min = MIN_LIMIT;
 
 int main(void)
 {
-    /* GPIOS init */
+    // GPIOS init 
     gpios_init();
 
-    /* UART init */
+    // UART init 
     uart_init();
 
-    /* Filter init */
+    // Filter init 
 #if (ENABLE_DSP_FILTER)
     dsp_filter_init();
 #endif // ENABLE_DSP_FILTER
 
-    /* Bluetooth init */
+    // Bluetooth init 
     bt_init();
 
-    /* Audio init */
+    // Audio init 
     audio_init();
 
     k_sleep(K_MSEC(500));
 
-    /* App is running */
+    // App is running 
     gpio_pin_set(led.port, led.pin, 1);
 
     while (1)
@@ -86,14 +85,14 @@ int main(void)
  */
 static int audio_init(void)
 {
-    /* Check device is ready */
+    // Check device is ready 
     if (!device_is_ready(i2s_dev))
     {
         printf("I2S device not ready\n");
         return -1;
     }
 
-    /* Configure I2S */
+    // Configure I2S 
     hi2s.dev_i2s = i2s_dev;
     hi2s.i2s_cfg_dir = I2S_DIR_BOTH;
     hi2s.i2s_cfg = &i2s_cfg_local;
@@ -118,7 +117,7 @@ static int audio_init(void)
  */
 static int uart_init(void)
 {
-    /* Check device is ready */
+    // Check device is ready 
     if (!device_is_ready(uart0_dev))
     {
         printf("UART device not ready\n");
@@ -193,10 +192,12 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
         if ((pmem[i] <= max) && (pmem[i] >= min))
         {
             pmem[i] <<= AMP_FACTOR;
+            pmem[i+1] <<= AMP_FACTOR;
         }
         else
         {
             pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
+            pmem[i+1] = (pmem[i+1] >= 0) ? INT32_MAX : INT32_MIN;
         }
     }
 #endif // !ENABLE_SIGNAL_GEN

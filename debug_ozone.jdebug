@@ -29,6 +29,7 @@ void OnProjectLoad (void) {
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M33F.svd");
+	Project.AddSvdFile ("D:\Andrea\Embedded\repositories\wireless_mic\nrf5340_application.svd");
   //
   // User settings
   //
