@@ -1,26 +1,31 @@
 
 
-Breakpoint=C:/ncs/v3.2.1/zephyr/drivers/clock_control/clock_control_nrf.c:637:4, State=BP_STATE_DISABLED
-Breakpoint=C:/ncs/v3.2.1/zephyr/kernel/sched.c:944:45, Permitted Impl.=BP_TYPE_MIXED, State=BP_STATE_DISABLED
-Breakpoint=C:/ncs/v3.2.1/modules/hal/nordic/nrfx/hal/nrf_clock.h:1155:13, State=BP_STATE_DISABLED
+Breakpoint=C:/ncs/v3.2.1/zephyr/drivers/clock_control/clock_control_nrf.c:639:4, State=BP_STATE_DISABLED
+Breakpoint=C:/ncs/v3.2.1/zephyr/kernel/sched.c:946:45, Permitted Impl.=BP_TYPE_MIXED, State=BP_STATE_DISABLED
+Breakpoint=C:/ncs/v3.2.1/modules/hal/nordic/nrfx/hal/nrf_clock.h:1163:17, State=BP_STATE_DISABLED
 Breakpoint=D:/Andrea/Embedded/repositories/wireless_mic/wmic/build/wmic/zephyr/include/generated/zephyr/syscalls/kernel.h:184:2, State=BP_STATE_DISABLED
+OpenDocument="i2s_nrfx.c", FilePath="C:/ncs/v3.2.1/zephyr/drivers/i2s/i2s_nrfx.c", Line=467
+OpenDocument="cpu_idle.c", FilePath="C:/ncs/v3.2.1/zephyr/arch/arm/core/cortex_m/cpu_idle.c", Line=87
+OpenDocument="arm_fir_q15.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/modules/CMSIS_DSP/Source/FilteringFunctions/arm_fir_q15.c", Line=657
+OpenDocument="fault_s.S", FilePath="C:/ncs/v3.2.1/zephyr/arch/arm/core/cortex_m/fault_s.S", Line=68
+OpenDocument="uart.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/wmic/build/wmic/zephyr/include/generated/zephyr/syscalls/uart.h", Line=231
+OpenDocument="bt1036c_drv.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/wmic/src/bt1036c/bt1036c_drv.c", Line=127
 OpenDocument="device.h", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/wmic/build/wmic/zephyr/include/generated/zephyr/syscalls/device.h", Line=45
-OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/wmic/src/main.c", Line=64
-OpenDocument="bt1036c_drv.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/wmic/src/bt1036c/bt1036c_drv.c", Line=113
+OpenDocument="main.c", FilePath="D:/Andrea/Embedded/repositories/wireless_mic/wmic/src/main.c", Line=160
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=2, w=265, h=191, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=1, w=265, h=230, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
-OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=265, h=191, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=599, h=275, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
-OpenWindow="Local Data", DockArea=RIGHT, x=0, y=3, w=265, h=171, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=2, w=599, h=383, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=599, h=126, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=2, w=465, h=192, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=1, w=465, h=225, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=465, h=191, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=599, h=273, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
+OpenWindow="Local Data", DockArea=RIGHT, x=0, y=3, w=465, h=175, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=2, w=599, h=366, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=599, h=145, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 OpenWindow="Terminal", DockArea=BOTTOM, x=0, y=0, w=518, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 OpenWindow="Data Sampling", DockArea=BOTTOM, x=2, y=0, w=310, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
 OpenWindow="Console", DockArea=BOTTOM, x=1, y=0, w=1090, h=132, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;500]
-TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;385;100]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;385;259]
 TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[119;131;100;100;230;100]
 TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[1183;100;100;100;833]
 TableHeader="Call Stack", SortCol="Function", SortOrder="ASCENDING", VisibleCols=["Function";"Stack Frame";"Source";"PC";"Return Address";"Stack Used"], ColWidths=[128;118;147;100;166;100]

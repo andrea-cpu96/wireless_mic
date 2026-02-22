@@ -7,7 +7,7 @@
 /* Debug support */
 #include <zephyr/sys/printk.h>
 
-#define AUDIO_TXRX_THREAD_STACK 2048
+#define AUDIO_TXRX_THREAD_STACK (4096*4) 
 K_THREAD_STACK_DEFINE(audio_txrx_stack, AUDIO_TXRX_THREAD_STACK);
 
 i2s_drv_config_t *hi2s_int;

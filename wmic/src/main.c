@@ -20,15 +20,15 @@
 
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
-// LED data structures 
+// LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
-// I2S data structures 
+// I2S data structures
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 i2s_drv_config_t hi2s;
 static struct i2s_config i2s_cfg_local = {0};
 
-// UART data structures 
+// UART data structures
 const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
 
 static int gpios_init(void);
@@ -39,7 +39,7 @@ static void bt_init(void);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
-static void dsp_filter(int32_t *pmem, uint32_t size);
+static void dsp_filter(int32_t *pmem);
 #endif // ENABLE_DSP_FILTER
 
 static void data_elab(int32_t *pmem, uint32_t block_size);
@@ -49,26 +49,26 @@ const float min = MIN_LIMIT;
 
 int main(void)
 {
-    // GPIOS init 
+    // GPIOS init
     gpios_init();
 
-    // UART init 
+    // UART init
     uart_init();
 
-    // Filter init 
+    // Filter init
 #if (ENABLE_DSP_FILTER)
     dsp_filter_init();
 #endif // ENABLE_DSP_FILTER
 
-    // Bluetooth init 
+    // Bluetooth init
     bt_init();
 
-    // Audio init 
+    // Audio init
     audio_init();
 
     k_sleep(K_MSEC(500));
 
-    // App is running 
+    // App is running
     gpio_pin_set(led.port, led.pin, 1);
 
     while (1)
@@ -85,14 +85,14 @@ int main(void)
  */
 static int audio_init(void)
 {
-    // Check device is ready 
+    // Check device is ready
     if (!device_is_ready(i2s_dev))
     {
         printf("I2S device not ready\n");
         return -1;
     }
 
-    // Configure I2S 
+    // Configure I2S
     hi2s.dev_i2s = i2s_dev;
     hi2s.i2s_cfg_dir = I2S_DIR_BOTH;
     hi2s.i2s_cfg = &i2s_cfg_local;
@@ -117,14 +117,14 @@ static int audio_init(void)
  */
 static int uart_init(void)
 {
-    // Check device is ready 
+    // Check device is ready
     if (!device_is_ready(uart0_dev))
     {
         printf("UART device not ready\n");
-        return -1;
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 /**
@@ -164,43 +164,38 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     int size = block_size / sizeof(int32_t);
 
 #if (ENABLE_SIGNAL_GEN)
-    for (int i = 0; i < size; i = i + 2)
+    for (int i = 0; i < size - 1; i += 2)
     {
-        int index = (i / 2) % SIG_GEN_LEN;
-        pmem[i] = (int32_t)(signals_get_sample(index) * (float32_t)32767);
-        pmem[i] = (pmem[i] << 16);
-        pmem[i + 1] = pmem[i];
-    }
-#endif // ENABLE_SIGNAL_GEN
-
+        pmem[i] = (int32_t)(signals_get_sample() * (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
+        pmem[i] = (pmem[i] << 16);                                         // Shift to upper 16 bits (according to bluetooth module data format)
+        pmem[i + 1] = pmem[i];                                             // Right channel equal to left channel
 #if (ENABLE_DSP_FILTER)
-    dsp_filter(pmem, size);
+        dsp_filter(&pmem[i]);
 #endif // ENABLE_DSP_FILTER
-
-#if (ENABLE_STEREO_DIFF)
-    for (int i = 0; i < size; i += 2)
-    {
-        int32_t diff = pmem[i + 1] - pmem[i]; // right - left
-        pmem[i] = diff;
-        pmem[i + 1] = diff;
     }
-#endif // ENABLE_STEREO_DIFF
-
-#if (!ENABLE_SIGNAL_GEN)
-    for (int i = 0; i < size; i = i + 2)
+#else
+    for (int i = 0; i < size - 1; i += 2)
     {
         if ((pmem[i] <= max) && (pmem[i] >= min))
         {
             pmem[i] <<= AMP_FACTOR;
-            pmem[i+1] <<= AMP_FACTOR;
+            pmem[i + 1] <<= AMP_FACTOR;
         }
         else
         {
             pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
-            pmem[i+1] = (pmem[i+1] >= 0) ? INT32_MAX : INT32_MIN;
+            pmem[i + 1] = (pmem[i + 1] >= 0) ? INT32_MAX : INT32_MIN;
         }
+#if (ENABLE_STEREO_DIFF)
+        int32_t diff = pmem[i + 1] - pmem[i]; // right - left
+        pmem[i] = diff;
+        pmem[i + 1] = diff;
+#endif // ENABLE_STEREO_DIFF
+#if (ENABLE_DSP_FILTER)
+        dsp_filter(&pmem[i]);
+#endif // ENABLE_DSP_FILTER
     }
-#endif // !ENABLE_SIGNAL_GEN
+#endif // ENABLE_SIGNAL_GEN
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -210,7 +205,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
  * @return void
  */
 static void dsp_filter_init(void)
-{ 
+{
     lowpass_filter_init(1); // block_len = 1
     return;
 }
@@ -220,40 +215,32 @@ static void dsp_filter_init(void)
  *
  * @return void
  */
-static void dsp_filter(int32_t *pmem, uint32_t size)
+static void dsp_filter(int32_t *pmem)
 {
     float32_t data_f32 = 0.0;
     q15_t data_q15;
     q15_t out;
+    int32_t filtered;
 
 #if (ENABLE_STEREO_DIFF)
-    for (int i = 0; i < size; i += 2)
-    {
-        data_f32 = ((pmem[i]) / (float32_t)2147483648);
-        arm_float_to_q15(&data_f32, &data_q15, 1);
-        lowpass_filter_exc(&data_q15, &out);
-        int32_t filtered = (int32_t)(out * (2147483648 / 32768) * 10);
-        pmem[i] = filtered;     // Left channel
-        pmem[i + 1] = filtered; // Right channel
-    }
+    data_f32 = ((pmem[0]) / (float32_t)2147483648); // Normalization from int32 to float32 (range -1.0 to 1.0)
+    arm_float_to_q15(&data_f32, &data_q15, 1);      // Conversion from float32 to 15
+    lowpass_filter_exc(&data_q15, &out);
+    filtered = (int32_t)(out * (65536)); // Conversion from q15 to int32 (2147483648 / 32768 = 65536)
+    pmem[0] = filtered;                                       // Left channel
+    pmem[1] = filtered;                                       // Right channel (equal to left)
 #else
     // Left channel
-    for (int i = 0; i < size; i += 2)
-    {
-        data_f32 = ((pmem[i]) / (float32_t)2147483648);
-        arm_float_to_q15(&data_f32, &data_q15, 1);
-        lowpass_filter_exc(&data_q15, &out);
-        pmem[i] = (int32_t)(out * (2147483648 / 32768) * 10);
-    }
+    data_f32 = ((pmem[0]) / (float32_t)2147483648);
+    arm_float_to_q15(&data_f32, &data_q15, 1);
+    lowpass_filter_exc(&data_q15, &out);
+    pmem[0] = (int32_t)(out * (2147483648 / 32768));
 
     // Right channel
-    for (int i = 1; i < size; i += 2)
-    {
-        data_f32 = ((pmem[i]) / (float32_t)2147483648);
-        arm_float_to_q15(&data_f32, &data_q15, 1);
-        lowpass_filter_exc(&data_q15, &out);
-        pmem[i] = (int32_t)(out * (2147483648 / 32768) * 10);
-    }
+    data_f32 = ((pmem[1]) / (float32_t)2147483648);
+    arm_float_to_q15(&data_f32, &data_q15, 1);
+    lowpass_filter_exc(&data_q15, &out);
+    pmem[1] = (int32_t)(out * (2147483648 / 32768));
 #endif // ENABLE_STEREO_DIFF
 
     return;

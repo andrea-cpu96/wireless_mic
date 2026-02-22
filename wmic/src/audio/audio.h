@@ -16,7 +16,7 @@
 #define I2S_RX_DELAY 2000 // After this time, i2s_read and i2s_write gives an error
 
 /* Buffer defines */
-#define BUFFER_BLOCK_TIME_MS 100
+#define BUFFER_BLOCK_TIME_MS 1
 #define DATA_BUFFER_SIZE (SAMPLE_FREQ * BUFFER_BLOCK_TIME_MS / 1000)
 #define INITIAL_BLOCKS 2 // Needed by Zephyr I2S driver
 #define AVAILABLE_BLOCKS 3 // Further blocks available in case of necessity 

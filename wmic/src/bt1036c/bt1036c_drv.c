@@ -11,7 +11,7 @@
 
 #define RX_BUFF_SIZE 500
 
-#define BT1036C_DECODE_THREAD_STACK 512
+#define BT1036C_DECODE_THREAD_STACK 1024
 K_THREAD_STACK_DEFINE(bt1036c_decode_stack, BT1036C_DECODE_THREAD_STACK);
 
 K_SEM_DEFINE(uart_sem, 0, 1);
@@ -22,8 +22,8 @@ const static struct device *uart_int;
 
 struct bluetooth_peers
 {
-    char name[50];
-    char mac[13];
+    char name[100];
+    char mac[100];
 };
 
 struct bt1036c_status_handler
