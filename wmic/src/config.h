@@ -2,6 +2,7 @@
 
 #define TXRX_MODULE BT103036C_CONFIG_TX // (0, TX) ; (1, RX)
 #define ENABLE_DSP_FILTER false
+#define ENABLE_DSP_ADT_EFFECT true
 #define ENABLE_STEREO_DIFF true
 #define ENABLE_SIGNAL_GEN false
 

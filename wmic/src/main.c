@@ -6,17 +6,18 @@
 #include <zephyr/sys/printk.h>
 
 #include <stdio.h>
-#if (ENABLE_DSP_FILTER)
 #include <arm_math.h>
-#endif // ENABLE_DSP_FILTER
 
 #include "config.h"
 #include "audio.h"
 #include "bt1036c_drv.h"
+#include "signals.h"
 #if (ENABLE_DSP_FILTER)
 #include "low_pass_filter.h"
 #endif // ENABLE_DSP_FILTER
-#include "signals.h"
+#if (ENABLE_DSP_ADT_EFFECT)
+#include "adt.h"
+#endif // ENABLE_DSP_ADT_EFFECT
 
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
@@ -42,6 +43,11 @@ static void dsp_filter_init();
 static void dsp_filter(int32_t *pmem);
 #endif // ENABLE_DSP_FILTER
 
+#if (ENABLE_DSP_ADT_EFFECT)
+static void dsp_adt_init(void);
+static void dsp_adt(int32_t *sample);
+#endif // ENABLE_DSP_ADT_EFFECT
+
 static void data_elab(int32_t *pmem, uint32_t block_size);
 
 const float max = MAX_LIMIT;
@@ -59,6 +65,11 @@ int main(void)
 #if (ENABLE_DSP_FILTER)
     dsp_filter_init();
 #endif // ENABLE_DSP_FILTER
+
+    // ADT init
+#if (ENABLE_DSP_ADT_EFFECT)
+    dsp_adt_init();
+#endif // ENABLE_DSP_ADT_EFFECT
 
     // Bluetooth init
     bt_init();
@@ -181,11 +192,6 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
             pmem[i] <<= AMP_FACTOR;
             pmem[i + 1] <<= AMP_FACTOR;
         }
-        else
-        {
-            pmem[i] = (pmem[i] >= 0) ? INT32_MAX : INT32_MIN;
-            pmem[i + 1] = (pmem[i + 1] >= 0) ? INT32_MAX : INT32_MIN;
-        }
 #if (ENABLE_STEREO_DIFF)
         int32_t diff = pmem[i + 1] - pmem[i]; // right - left
         pmem[i] = diff;
@@ -194,6 +200,9 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #if (ENABLE_DSP_FILTER)
         dsp_filter(&pmem[i]);
 #endif // ENABLE_DSP_FILTER
+#if (ENABLE_DSP_ADT_EFFECT)
+        dsp_adt(&pmem[i]);
+#endif
     }
 #endif // ENABLE_SIGNAL_GEN
 }
@@ -246,3 +255,16 @@ static void dsp_filter(int32_t *pmem)
     return;
 }
 #endif // ENABLE_DSP_FILTER
+
+#if (ENABLE_DSP_ADT_EFFECT)
+static void dsp_adt_init(void)
+{
+    adt_init(100);
+}
+
+static void dsp_adt(int32_t *sample)
+{   
+    adt_store_sample(sample[0]);
+    sample[1] = (adt_get_sample() >> 2);
+}
+#endif // ENABLE_DSP_ADT_EFFECT

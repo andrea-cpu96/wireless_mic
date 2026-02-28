@@ -7,6 +7,7 @@ target_sources(app PRIVATE
     src/main.c
     src/audio/audio.c
     src/filters/low_pass_filter.c
+    src/filters/adt.c
     src/filters/signals.c
     src/bt1036c/bt1036c_drv.c
 )
