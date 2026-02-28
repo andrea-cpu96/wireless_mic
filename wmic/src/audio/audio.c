@@ -7,7 +7,7 @@
 /* Debug support */
 #include <zephyr/sys/printk.h>
 
-#define AUDIO_TXRX_THREAD_STACK (4096*4) 
+#define AUDIO_TXRX_THREAD_STACK (4096 * 4)
 K_THREAD_STACK_DEFINE(audio_txrx_stack, AUDIO_TXRX_THREAD_STACK);
 
 i2s_drv_config_t *hi2s_int;
@@ -46,11 +46,18 @@ int audio_config(i2s_drv_config_t *hi2s)
     return 0;
 }
 
+/**
+ * @brief audio_txrx_thread
+ *
+ * @param a
+ * @param b
+ * @param c
+ */
 static void audio_txrx_thread(void *a, void *b, void *c)
 {
     i2s_start_transfer();
 
-    /* Trigger start*/
+    // Trigger start
     i2s_trigger_txrx();
 
     /* Bare metal settings
@@ -60,10 +67,11 @@ static void audio_txrx_thread(void *a, void *b, void *c)
      *
      *  NOTE2; these settings must be set after i2s_trigger_txrx() to have effect.
      */
-    //NRF_I2S0->CONFIG.MCKFREQ = 0x81F30000; // Calculated via script octave
+    // NRF_I2S0->CONFIG.MCKFREQ = 0x81F30000; // Calculated via script octave
     NRF_I2S0->CONFIG.RATIO = 6;            // x256
-    NRF_I2S0->CONFIG.CLKCONFIG = (0x0101);
-    while(1)
+    NRF_I2S0->CONFIG.CLKCONFIG = (0x0101); // Bypass internal MCK scaler (directly take the ACLK source)
+
+    while (1)
     {
         // Thread is blocked by i2s_read untill new data arrive
         i2s_continue_transfer();
@@ -104,7 +112,7 @@ static int i2s_start_transfer(void)
             return -1;
         }
 
-        memset(mem_block, 1, BLOCK_SIZE);
+        memset(mem_block, 1, BLOCK_SIZE); // For debug (watch if the line is transmitting 1s)
 
         if (i2s_write(hi2s_int->dev_i2s, mem_block, BLOCK_SIZE) < 0)
         {
@@ -128,14 +136,20 @@ static int i2s_continue_transfer(void)
     uint32_t block_size;
 
     if (i2s_read(hi2s_int->dev_i2s, &mem_block, &block_size) < 0)
+    {
+        printk("Failed to reaad block\n");
         return -1;
+    }
 
     int32_t *pmem = (int32_t *)mem_block;
-    
+
     hi2s_int->i2s_elab(pmem, block_size);
 
     if (i2s_write(hi2s_int->dev_i2s, mem_block, block_size) < 0)
+    {
+        printk("Failed to write block\n");
         return -1;
+    }
 
     return 0;
 }

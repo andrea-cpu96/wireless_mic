@@ -5,9 +5,6 @@
  *      Author: andre
  */
 
-#ifndef __SIGNALS__H
-#define __SIGNALS__H
-
 #include <arm_math.h>
 #include "signals.h"
 
@@ -69,6 +66,11 @@ static const float32_t gen_signal[SIG_GEN_LEN] = {
     -0.766933918f, -0.726841986f, -0.672019005f, -0.603578985f, -0.522907495f, -0.43163681f, -0.331621379f, -0.224888638f,
     -0.113595761f};
 
+/**
+ * @brief signals_get_sample
+ *
+ * @return float32_t
+ */
 float32_t signals_get_sample(void)
 {
   static int index = 0;
@@ -78,5 +80,3 @@ float32_t signals_get_sample(void)
 
   return sig;
 }
-
-#endif

@@ -178,8 +178,8 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     for (int i = 0; i < size - 1; i += 2)
     {
         pmem[i] = (int32_t)(signals_get_sample() * (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
-        pmem[i] = (pmem[i] << 16);                                         // Shift to upper 16 bits (according to bluetooth module data format)
-        pmem[i + 1] = pmem[i];                                             // Right channel equal to left channel
+        pmem[i] = (pmem[i] << 16);                                    // Shift to upper 16 bits (according to bluetooth module data format)
+        pmem[i + 1] = pmem[i];                                        // Right channel equal to left channel
 #if (ENABLE_DSP_FILTER)
         dsp_filter(&pmem[i]);
 #endif // ENABLE_DSP_FILTER
@@ -236,8 +236,8 @@ static void dsp_filter(int32_t *pmem)
     arm_float_to_q15(&data_f32, &data_q15, 1);      // Conversion from float32 to 15
     lowpass_filter_exc(&data_q15, &out);
     filtered = (int32_t)(out * (65536)); // Conversion from q15 to int32 (2147483648 / 32768 = 65536)
-    pmem[0] = filtered;                                       // Left channel
-    pmem[1] = filtered;                                       // Right channel (equal to left)
+    pmem[0] = filtered;                  // Left channel
+    pmem[1] = filtered;                  // Right channel (equal to left)
 #else
     // Left channel
     data_f32 = ((pmem[0]) / (float32_t)2147483648);
@@ -257,13 +257,22 @@ static void dsp_filter(int32_t *pmem)
 #endif // ENABLE_DSP_FILTER
 
 #if (ENABLE_DSP_ADT_EFFECT)
+/**
+ * @brief dsp_adt_init
+ *
+ */
 static void dsp_adt_init(void)
 {
     adt_init(100);
 }
 
+/**
+ * @brief dsp_adt
+ *
+ * @param sample
+ */
 static void dsp_adt(int32_t *sample)
-{   
+{
     adt_store_sample(sample[0]);
     sample[1] = (adt_get_sample() >> 2);
 }

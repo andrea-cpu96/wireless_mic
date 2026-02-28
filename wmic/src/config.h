@@ -1,8 +1,8 @@
 #include "bt1036c_drv.h"
 
-#define TXRX_MODULE BT103036C_CONFIG_TX // (0, TX) ; (1, RX)
+#define TXRX_MODULE BT103036C_CONFIG_TX
 #define ENABLE_DSP_FILTER false
-#define ENABLE_DSP_ADT_EFFECT true
+#define ENABLE_DSP_ADT_EFFECT false
 #define ENABLE_STEREO_DIFF true
 #define ENABLE_SIGNAL_GEN false
 

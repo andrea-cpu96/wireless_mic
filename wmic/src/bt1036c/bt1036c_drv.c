@@ -49,14 +49,20 @@ static void uart_write_str(const char *s);
 static int decode_bt1036c_data(char *s);
 static void bt1036c_decode_thread(void *a, void *b, void *c);
 static void uart_irq_cb(const struct device *dev, void *user_data);
-static void extract_name(const char *input, char *name_out);
-static void extract_mac(const char *input, char *mac_out);
+static void extract_name(const char *input, struct bluetooth_peers *peer);
+static void extract_mac(const char *input, struct bluetooth_peers *peer);
 
-// Temporary buffer used to read from FIFO in IRQ context 
+// Temporary buffer used to read from FIFO in IRQ context
 static uint8_t irq_buf[128];
 static uint8_t cmd_buff_rx[RX_BUFF_SIZE];
 static uint16_t rx_buff_idx = 0;
 
+/**
+ * @brief bt1036c_config
+ *
+ * @param uart
+ * @param txrx_config
+ */
 void bt1036c_config(const struct device *uart, const uint8_t txrx_config)
 {
     uart_int = uart;
@@ -108,17 +114,15 @@ void bt1036c_config(const struct device *uart, const uint8_t txrx_config)
     bt1036c_at_send("REBOOT"); // Reboot to make changes effective
     k_sleep(K_MSEC(1000));
 
-    bt1036c_at_send("A2DPSTAT"); // Read AD2DP status
+    bt1036c_at_send("A2DPSTAT"); // Read A2DP status
     k_sleep(K_MSEC(200));
 
     if (txrx_config != BT103036C_CONFIG_RX)
     {
-        bt1036c_at_send("SCAN=1"); // Scan MACs address advertised
-
-        k_sleep(K_MSEC(10000)); // Longer wait to scan all the peripherals available
+        bt1036c_at_send("SCAN=1"); // Scan advertised MACs address
+        k_sleep(K_MSEC(10000));    // Longer wait to scan all the peripherals available
 
         bt1036c_at_send("A2DPSTAT"); // Should be connected (3)
-
         k_sleep(K_MSEC(200));
 
         // Wait for sink MACS address
@@ -128,11 +132,16 @@ void bt1036c_config(const struct device *uart, const uint8_t txrx_config)
         bt1036c_at_send("A2DPCONN=414211F3B97A"); // Hardwired MAC address
         k_sleep(K_MSEC(2000));
 
-        bt1036c_at_send("AUDROUTE=1"); // Start AD2DP communication of I2S data received
+        bt1036c_at_send("AUDROUTE=1"); // Start A2DP communication of I2S data received
         k_sleep(K_MSEC(100));
     }
 }
 
+/**
+ * @brief bt1036c_at_send
+ *
+ * @param cmd
+ */
 void bt1036c_at_send(const char *cmd)
 {
     char buffer[100];
@@ -142,6 +151,13 @@ void bt1036c_at_send(const char *cmd)
     uart_write_str(buffer);
 }
 
+/**
+ * @brief bt1036c_decode_thread
+ *
+ * @param a
+ * @param b
+ * @param c
+ */
 static void bt1036c_decode_thread(void *a, void *b, void *c)
 {
     static uint16_t decode_idx = 0;
@@ -156,19 +172,20 @@ static void bt1036c_decode_thread(void *a, void *b, void *c)
         uart_irq_rx_disable(uart_int);
 
         // Consider the distance between the two indexes
-        // NOTE; summing RX_BUFF_SIZE is necessary to cojnsider also the case in which
+        // NOTE; summing RX_BUFF_SIZE is necessary to consider also the case in which
         //       rx_buff_idx is one turn haed compared to decode_idx
         uint16_t dist = (rx_buff_idx + RX_BUFF_SIZE - decode_idx) % RX_BUFF_SIZE;
         if (dist > 2) // Condition needed because each packet starts with \r\n
         {
-            uint16_t next = (decode_idx + 1) % RX_BUFF_SIZE;
+            uint16_t next = ((decode_idx + 1) % RX_BUFF_SIZE);
 
-            if (cmd_buff_rx[decode_idx] == '\r' &&
-                cmd_buff_rx[next] == '\n')
+            if ((cmd_buff_rx[decode_idx] == '\r') &&
+                (cmd_buff_rx[next] == '\n'))
             {
-                uint16_t i = (decode_idx + 2) % RX_BUFF_SIZE;
-                uint16_t payload_idx = 0;
+                uint16_t i = (decode_idx + 2) % RX_BUFF_SIZE; // Start of the packet received
+                uint16_t payload_idx = 0;                     // Payload index
 
+                // Read until the end of the circular buffer is reached
                 while (i != rx_buff_idx)
                 {
                     char c = cmd_buff_rx[i];
@@ -178,16 +195,18 @@ static void bt1036c_decode_thread(void *a, void *b, void *c)
                         // End sequence \n found
                         payload[payload_idx] = '\0';
                         decode_bt1036c_data(payload);
-                        decode_idx = (i + 1) % RX_BUFF_SIZE; // only now we can increase the decoding index (in this way we start previous index until the end sequence is reached)
+                        // Only now we can increase the decoding index (in this way we start previous index until the end sequence is reached)
+                        decode_idx = (i + 1) % RX_BUFF_SIZE;
                         break;
                     }
 
-                    if (c != '\r' && payload_idx < sizeof(payload) - 1)
+                    if ((c != '\r') && (payload_idx < sizeof(payload) - 1))
                     {
-                        payload[payload_idx++] = c;
+                        payload[payload_idx] = c;
+                        payload_idx++;
                     }
 
-                    i = (i + 1) % RX_BUFF_SIZE;
+                    i = ((i + 1) % RX_BUFF_SIZE);
                 }
             }
             else // No \r\n sequence, data corrupted
@@ -198,7 +217,7 @@ static void bt1036c_decode_thread(void *a, void *b, void *c)
                     if (next != rx_buff_idx)
                     {
                         decode_idx = next;
-                        next = (decode_idx + 1) % RX_BUFF_SIZE;
+                        next = ((decode_idx + 1) % RX_BUFF_SIZE);
                     }
                     else
                     {
@@ -214,6 +233,12 @@ static void bt1036c_decode_thread(void *a, void *b, void *c)
     }
 }
 
+/**
+ * @brief uart_irq_cb
+ *
+ * @param dev
+ * @param user_data
+ */
 static void uart_irq_cb(const struct device *dev, void *user_data)
 {
     ARG_UNUSED(user_data);
@@ -223,9 +248,10 @@ static void uart_irq_cb(const struct device *dev, void *user_data)
 
     while (uart_irq_rx_ready(dev))
     {
-        int rx = uart_fifo_read(dev, irq_buf, sizeof(irq_buf));
+        int rx = uart_fifo_read(dev, irq_buf, sizeof(irq_buf)); // Read from UART peripheral buffer
         if (rx > 0)
         {
+            // Handle circular buffer space
             int16_t space_remaining = (RX_BUFF_SIZE - rx_buff_idx);
             if (rx <= space_remaining)
             {
@@ -244,6 +270,11 @@ static void uart_irq_cb(const struct device *dev, void *user_data)
     }
 }
 
+/**
+ * @brief uart_write_str
+ *
+ * @param s
+ */
 static void uart_write_str(const char *s)
 {
     for (size_t i = 0; i < strlen(s); i++)
@@ -252,6 +283,12 @@ static void uart_write_str(const char *s)
     }
 }
 
+/**
+ * @brief decode_bt1036c_data
+ *
+ * @param s
+ * @return int
+ */
 static int decode_bt1036c_data(char *s)
 {
     char cmd[20] = {0};
@@ -261,9 +298,9 @@ static int decode_bt1036c_data(char *s)
 
     if (!cmd_end)
     {
-        // If no end reached it means Ok command or error
+        // If end not reached it means Ok command or error
 
-        // OK 
+        // OK
         if (strcmp(s, "OK") == 0)
         {
             bt1036c_status.ok = 1;
@@ -275,36 +312,36 @@ static int decode_bt1036c_data(char *s)
         }
     }
 
-    data_start = cmd_end + 1; // Start of data payload
+    data_start = (cmd_end + 1); // Start of data payload
 
-    int len = cmd_end - s;
+    int len = (cmd_end - s);
     memcpy(cmd, s, len);
     cmd[len] = '\0';
 
     strcpy(data, data_start);
 
-    // +DEVSTAT 
+    // +DEVSTAT
     if (strcmp(cmd, "+DEVSTAT") == 0)
     {
         bt1036c_status.devstat = atoi(data);
         return 0;
     }
 
-    // +PWRSTAT 
+    // +PWRSTAT
     if (strcmp(cmd, "+PWRSTAT") == 0)
     {
         bt1036c_status.pwrstat = atoi(data);
         return 0;
     }
 
-    // +VER 
+    // +VER
     if (strcmp(cmd, "+VER") == 0)
     {
         strncpy(bt1036c_status.ver, data, sizeof(bt1036c_status.ver) - 1);
         return 0;
     }
 
-    // +PROFILE 
+    // +PROFILE
     if (strcmp(cmd, "+PROFILE") == 0)
     {
         bt1036c_status.profile = atoi(data);
@@ -318,108 +355,132 @@ static int decode_bt1036c_data(char *s)
         return 0;
     }
 
-    // +GATTSTAT 
+    // +GATTSTAT
     if (strcmp(cmd, "+GATTSTAT") == 0)
     {
         bt1036c_status.gattstat = atoi(data);
         return 0;
     }
 
-    // +A2DPSTAT 
+    // +A2DPSTAT
     if (strcmp(cmd, "+A2DPSTAT") == 0)
     {
         bt1036c_status.a2dpstat = atoi(data);
         return 0;
     }
 
-    // +AVRCPSTAT 
+    // +AVRCPSTAT
     if (strcmp(cmd, "+AVRCPSTAT") == 0)
     {
         bt1036c_status.avrcpstat = atoi(data);
         return 0;
     }
 
-    // +HFPSTAT 
+    // +HFPSTAT
     if (strcmp(cmd, "+HFPSTAT") == 0)
     {
         bt1036c_status.hfpstat = atoi(data);
         return 0;
     }
 
-    // +PBSTAT 
+    // +PBSTAT
     if (strcmp(cmd, "+PBSTAT") == 0)
     {
         bt1036c_status.pbstat = atoi(data);
         return 0;
     }
 
-    // +NAME 
+    // +NAME
     if (strcmp(cmd, "+NAME") == 0)
     {
         strncpy(bt1036c_status.name, data, sizeof(bt1036c_status.name) - 1);
         return 0;
     }
 
-    // +I2SCFG 
+    // +I2SCFG
     if (strcmp(cmd, "+I2SCFG") == 0)
     {
         bt1036c_status.i2scfg = atoi(data);
         return 0;
     }
 
-    // +SCAN 
+    // +SCAN
     if (strcmp(cmd, "+SCAN") == 0)
     {
-        extract_name(data, bt1036c_status.peer[bt1036c_status.peer_num].name);
-        extract_mac(data, bt1036c_status.peer[bt1036c_status.peer_num].mac);
+        extract_name(data, &bt1036c_status.peer[bt1036c_status.peer_num]);
+        extract_mac(data, &bt1036c_status.peer[bt1036c_status.peer_num]);
         bt1036c_status.peer_num++;
         return 0;
     }
     return -1;
 }
 
-static void extract_name(const char *input, char *name_out)
+/**
+ * @brief extract_name
+ *
+ * @param input
+ * @param peer
+ */
+static void extract_name(const char *input, struct bluetooth_peers *peer)
 {
     uint8_t comma_num = 0;
+    size_t written = 0;
+    char *name_out = peer->name;
+    size_t max_len = sizeof(peer->name);
 
-    while(comma_num < 4)
+    // Peer name is in the 5th field (fields are separated by ,)
+    while (comma_num < 4 && *input)
     {
-        if(*input == ',')
+        if (*input == ',')
         {
             comma_num++;
         }
         input++;
     }
 
-    while(*input != ',')
+    // Extract the peer's name
+    while (*input != ',' && *input != '\0' && written < max_len - 1)
     {
         *name_out = *input;
         name_out++;
-        input++; 
+        input++;
+        written++;
     }
 
-    return; 
+    return;
 }
 
-static void extract_mac(const char *input, char *mac_out)
+/**
+ * @brief extract_mac
+ *
+ * @param input
+ * @param peer
+ */
+static void extract_mac(const char *input, struct bluetooth_peers *peer)
 {
     uint8_t comma_num = 0;
+    size_t written = 0;
+    char *mac_out = peer->mac;
+    size_t max_len = sizeof(peer->mac);
 
-    while(comma_num < 3)
+    // Peer name is in the 4th field (fields are separated by ,)
+    while (comma_num < 3 && *input)
     {
-        if(*input == ',')
+        if (*input == ',')
         {
             comma_num++;
         }
         input++;
     }
 
-    while(*input != ',')
+    // Extract the peer's MAC address
+    while (*input != ',' && *input != '\0' && written < max_len - 1)
     {
         *mac_out = *input;
         mac_out++;
-        input++; 
+        input++;
+        written++;
     }
 
-    return; 
+    return;
 }

@@ -1,29 +1,27 @@
 #ifndef I2S_RXTX
 #define I2S_RXTX
 
-/* System */
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/i2s.h>
 
-/* Support */
 #include <math.h>
 #include <limits.h>
 
-/* I2S defines */
+// I2S defines
 #define CHANNELS_NUMBER 2
 #define SAMPLE_FREQ 44100 // bt module requires 44.1kHz or 48kHz
 #define I2S_WORD_BYTES 4  // 32 bits word
 #define I2S_RX_DELAY 2000 // After this time, i2s_read and i2s_write gives an error
 
-/* Buffer defines */
-#define BUFFER_BLOCK_TIME_MS 10
-#define DATA_BUFFER_SIZE (SAMPLE_FREQ * BUFFER_BLOCK_TIME_MS / 1000)
-#define INITIAL_BLOCKS 2 // Needed by Zephyr I2S driver
-#define AVAILABLE_BLOCKS 3 // Further blocks available in case of necessity 
+// Buffer defines 
+#define BUFFER_BLOCK_TIME_MS 10 // Stored audio track lenght in ms 
+#define DATA_BUFFER_SIZE ((SAMPLE_FREQ * BUFFER_BLOCK_TIME_MS) / 1000)
+#define INITIAL_BLOCKS 2   // Needed by Zephyr I2S driver (>= 2)
+#define AVAILABLE_BLOCKS 3 // Further blocks available in case of necessity
 #define NUM_BLOCKS (INITIAL_BLOCKS + AVAILABLE_BLOCKS)
 #define BLOCK_SIZE (CHANNELS_NUMBER * DATA_BUFFER_SIZE * I2S_WORD_BYTES)
 
-typedef void (*pi2s_elab)(int32_t *pmem, uint32_t block_size);
+typedef void (*pi2s_elab)(int32_t *pmem, uint32_t block_size); // Callback function for data elaboration
 
 typedef struct
 {

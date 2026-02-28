@@ -6,16 +6,16 @@ project(wmic)
 target_sources(app PRIVATE 
     src/main.c
     src/audio/audio.c
-    src/filters/low_pass_filter.c
-    src/filters/adt.c
-    src/filters/signals.c
+    src/DSP/low_pass_filter.c
+    src/DSP/adt.c
+    src/DSP/signals.c
     src/bt1036c/bt1036c_drv.c
 )
 
 zephyr_library_include_directories(
   src/
   src/bt1036c/
-  src/filters/
+  src/DSP/
   src/audio/
 )
 
