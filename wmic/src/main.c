@@ -21,16 +21,18 @@
 #include "adt.h"
 #endif // ENABLE_DSP_ADT_EFFECT
 
+#define USER_BUTTONS_N 4
+
 K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
-// BUTTONS data structures
-const struct gpio_dt_spec btn1 = GPIO_DT_SPEC_GET(DT_NODELABEL(button1), gpios);
-const struct gpio_dt_spec btn2 = GPIO_DT_SPEC_GET(DT_NODELABEL(button2), gpios);
-const struct gpio_dt_spec btn3 = GPIO_DT_SPEC_GET(DT_NODELABEL(button3), gpios);
-const struct gpio_dt_spec btn4 = GPIO_DT_SPEC_GET(DT_NODELABEL(button4), gpios);
+// User buttons data structures
+const struct gpio_dt_spec ubtn[USER_BUTTONS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(button1), gpios),
+                                                      GPIO_DT_SPEC_GET(DT_NODELABEL(button2), gpios),
+                                                      GPIO_DT_SPEC_GET(DT_NODELABEL(button3), gpios),
+                                                      GPIO_DT_SPEC_GET(DT_NODELABEL(button4), gpios)};
 static struct gpio_callback buttons_cb;
 
 // I2S data structures
@@ -64,7 +66,7 @@ static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
 #endif // ENABLE_DSP_ADT_EFFECT
 
-static void buttons_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
+static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
 static void data_elab(int32_t *pmem, uint32_t block_size);
 
 const float max = MAX_LIMIT;
@@ -175,52 +177,30 @@ static void bt_init(void)
  */
 static int gpios_init(void)
 {
+    int ubtn_bit = 0;
+
+    // Signaling LED
     if (!gpio_is_ready_dt(&led))
     {
         return 0;
     }
-
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
 
-    if (!gpio_is_ready_dt(&btn1))
+    // User buttons
+    for (int i = 0; i < USER_BUTTONS_N; i++)
     {
-        return 0;
+        ubtn_bit |= BIT(ubtn[i].pin);
+
+        if (!gpio_is_ready_dt(&ubtn[i]))
+        {
+            return 0;
+        }
+        gpio_pin_configure_dt(&ubtn[i], GPIO_INPUT);
+        gpio_pin_interrupt_configure_dt(&ubtn[i], GPIO_INT_EDGE_TO_ACTIVE);
     }
 
-    gpio_pin_configure_dt(&btn1, GPIO_INPUT);
-    gpio_pin_interrupt_configure_dt(&btn1, GPIO_INT_EDGE_TO_ACTIVE);
-
-    if (!gpio_is_ready_dt(&btn2))
-    {
-        return 0;
-    }
-
-    gpio_pin_configure_dt(&btn2, GPIO_INPUT);
-    gpio_pin_interrupt_configure_dt(&btn2, GPIO_INT_EDGE_TO_ACTIVE);
-
-    if (!gpio_is_ready_dt(&btn3))
-    {
-        return 0;
-    }
-
-    gpio_pin_configure_dt(&btn3, GPIO_INPUT);
-    gpio_pin_interrupt_configure_dt(&btn3, GPIO_INT_EDGE_TO_ACTIVE);
-
-    if (!gpio_is_ready_dt(&btn4))
-    {
-        return 0;
-    }
-
-    gpio_pin_configure_dt(&btn4, GPIO_INPUT);
-    gpio_pin_interrupt_configure_dt(&btn4, GPIO_INT_EDGE_TO_ACTIVE);
-
-    gpio_init_callback(&buttons_cb, buttons_handler,
-                       BIT(btn1.pin) |
-                           BIT(btn2.pin) |
-                           BIT(btn3.pin) |
-                           BIT(btn4.pin));
-
-    gpio_add_callback(btn1.port, &buttons_cb);
+    gpio_init_callback(&buttons_cb, buttons_handler_cb, ubtn_bit);
+    gpio_add_callback(ubtn[0].port, &buttons_cb);
 
     return 1;
 }
@@ -368,22 +348,22 @@ static void dsp_amplifier(int32_t *sample)
     return;
 }
 
-static void buttons_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    if(pins == BIT(23))
+    if (pins == BIT(23))
     {
         ssd1306_event_set(EV1);
     }
-    else if(pins == BIT(24))
+    else if (pins == BIT(24))
     {
         ssd1306_event_set(EV2);
     }
-    else if(pins == BIT(8))
+    else if (pins == BIT(8))
     {
         ssd1306_event_set(EV3);
     }
-    else if(pins == BIT(9))
-    { 
+    else if (pins == BIT(9))
+    {
         ssd1306_event_set(EV4);
     }
 }
