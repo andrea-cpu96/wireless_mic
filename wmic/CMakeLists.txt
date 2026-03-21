@@ -10,6 +10,7 @@ target_sources(app PRIVATE
     src/DSP/adt.c
     src/DSP/signals.c
     src/bt1036c/bt1036c_drv.c
+    src/ssd1306/ssd1306.c
 )
 
 zephyr_library_include_directories(
@@ -17,6 +18,7 @@ zephyr_library_include_directories(
   src/bt1036c/
   src/DSP/
   src/audio/
+  src/ssd1306/
 )
 
 # Include the local CMSIS_DSP headers and compile only needed sources

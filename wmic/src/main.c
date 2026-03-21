@@ -3,6 +3,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/printk.h>
 
 #include <stdio.h>
@@ -10,6 +11,7 @@
 
 #include "config.h"
 #include "audio.h"
+#include "ssd1306.h"
 #include "bt1036c_drv.h"
 #include "signals.h"
 #if (ENABLE_DSP_FILTER)
@@ -24,6 +26,13 @@ K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
+// BUTTONS data structures
+const struct gpio_dt_spec btn1 = GPIO_DT_SPEC_GET(DT_NODELABEL(button1), gpios);
+const struct gpio_dt_spec btn2 = GPIO_DT_SPEC_GET(DT_NODELABEL(button2), gpios);
+const struct gpio_dt_spec btn3 = GPIO_DT_SPEC_GET(DT_NODELABEL(button3), gpios);
+const struct gpio_dt_spec btn4 = GPIO_DT_SPEC_GET(DT_NODELABEL(button4), gpios);
+static struct gpio_callback buttons_cb;
+
 // I2S data structures
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 i2s_drv_config_t hi2s;
@@ -32,11 +41,18 @@ static struct i2s_config i2s_cfg_local = {0};
 // UART data structures
 const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
 
+// I2C data structures
+const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
+
 static int gpios_init(void);
 static int uart_init(void);
 
 static int audio_init(void);
 static void bt_init(void);
+
+static int display_init(void);
+
+static void dsp_amplifier(int32_t *sample);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
@@ -48,6 +64,7 @@ static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
 #endif // ENABLE_DSP_ADT_EFFECT
 
+static void buttons_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
 static void data_elab(int32_t *pmem, uint32_t block_size);
 
 const float max = MAX_LIMIT;
@@ -60,6 +77,9 @@ int main(void)
 
     // UART init
     uart_init();
+
+    // display init
+    display_init();
 
     // Filter init
 #if (ENABLE_DSP_FILTER)
@@ -162,6 +182,46 @@ static int gpios_init(void)
 
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
 
+    if (!gpio_is_ready_dt(&btn1))
+    {
+        return 0;
+    }
+
+    gpio_pin_configure_dt(&btn1, GPIO_INPUT);
+    gpio_pin_interrupt_configure_dt(&btn1, GPIO_INT_EDGE_TO_ACTIVE);
+
+    if (!gpio_is_ready_dt(&btn2))
+    {
+        return 0;
+    }
+
+    gpio_pin_configure_dt(&btn2, GPIO_INPUT);
+    gpio_pin_interrupt_configure_dt(&btn2, GPIO_INT_EDGE_TO_ACTIVE);
+
+    if (!gpio_is_ready_dt(&btn3))
+    {
+        return 0;
+    }
+
+    gpio_pin_configure_dt(&btn3, GPIO_INPUT);
+    gpio_pin_interrupt_configure_dt(&btn3, GPIO_INT_EDGE_TO_ACTIVE);
+
+    if (!gpio_is_ready_dt(&btn4))
+    {
+        return 0;
+    }
+
+    gpio_pin_configure_dt(&btn4, GPIO_INPUT);
+    gpio_pin_interrupt_configure_dt(&btn4, GPIO_INT_EDGE_TO_ACTIVE);
+
+    gpio_init_callback(&buttons_cb, buttons_handler,
+                       BIT(btn1.pin) |
+                           BIT(btn2.pin) |
+                           BIT(btn3.pin) |
+                           BIT(btn4.pin));
+
+    gpio_add_callback(btn1.port, &buttons_cb);
+
     return 1;
 }
 
@@ -189,8 +249,8 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     {
         if ((pmem[i] <= max) && (pmem[i] >= min))
         {
-            pmem[i] <<= AMP_FACTOR;
-            pmem[i + 1] <<= AMP_FACTOR;
+            dsp_amplifier(&pmem[i]);
+            dsp_amplifier(&pmem[i + 1]);
         }
 #if (ENABLE_STEREO_DIFF)
         int32_t diff = pmem[i + 1] - pmem[i]; // right - left
@@ -205,6 +265,20 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif
     }
 #endif // ENABLE_SIGNAL_GEN
+}
+
+static int display_init(void)
+{
+    // Check device is ready
+    if (!device_is_ready(i2c1_dev))
+    {
+        printf("I2C device not ready\n");
+        return 0;
+    }
+
+    ssd1306_config(i2c1_dev);
+
+    return 1;
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -277,3 +351,39 @@ static void dsp_adt(int32_t *sample)
     sample[1] = (adt_get_sample() >> 2);
 }
 #endif // ENABLE_DSP_ADT_EFFECT
+
+static void dsp_amplifier(int32_t *sample)
+{
+    uint32_t voice = ((*sample) < 0) ? -(*sample) : (*sample);
+
+    if (voice < 200)
+    {
+        *sample = 0;
+    }
+    else
+    {
+        *sample <<= AMP_FACTOR;
+    }
+
+    return;
+}
+
+static void buttons_handler(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    if(pins == BIT(23))
+    {
+        ssd1306_event_set(EV1);
+    }
+    else if(pins == BIT(24))
+    {
+        ssd1306_event_set(EV2);
+    }
+    else if(pins == BIT(8))
+    {
+        ssd1306_event_set(EV3);
+    }
+    else if(pins == BIT(9))
+    { 
+        ssd1306_event_set(EV4);
+    }
+}
