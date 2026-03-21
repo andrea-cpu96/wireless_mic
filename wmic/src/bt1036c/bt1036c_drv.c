@@ -20,12 +20,6 @@ static struct k_thread bt1036c_decode_tcb;
 
 const static struct device *uart_int;
 
-struct bluetooth_peers
-{
-    char name[100];
-    char mac[100];
-};
-
 struct bt1036c_status_handler
 {
     int devstat;
@@ -63,8 +57,10 @@ static uint16_t rx_buff_idx = 0;
  * @param uart
  * @param txrx_config
  */
-void bt1036c_config(const struct device *uart, const uint8_t txrx_config)
+void bt1036c_config(const struct device *uart,  bt1036c_peers_cb cb, const uint8_t txrx_config)
 {
+    char str_mac[100];
+
     uart_int = uart;
 
     uart_irq_callback_user_data_set(uart, uart_irq_cb, NULL);
@@ -82,7 +78,7 @@ void bt1036c_config(const struct device *uart, const uint8_t txrx_config)
     k_sleep(K_MSEC(1000));
 
     /*
-     * NOTE; here we are still in the main branch,
+     * NOTE; here we are still in the main thread,
      *       we need to add a small sleep delay
      *       after each send to allow the bt thread
      *       to execute and decode the received data
@@ -125,11 +121,12 @@ void bt1036c_config(const struct device *uart, const uint8_t txrx_config)
         bt1036c_at_send("A2DPSTAT"); // Should be connected (3)
         k_sleep(K_MSEC(200));
 
-        // Wait for sink MACS address
-        while (bt1036c_status.peer[0].name[0] == 0)
-            ;
+        // Call calback for peer selction 
+        uint16_t peer_idx = cb(bt1036c_status.peer, bt1036c_status.peer_num);
 
-        bt1036c_at_send("A2DPCONN=414211F3B97A"); // Hardwired MAC address
+        // Set selected MAC address
+        snprintf(str_mac, sizeof(str_mac), "A2DPCONN=%s", (const char *)bt1036c_status.peer[peer_idx].mac);
+        bt1036c_at_send(str_mac); // Hardwired MAC address
         k_sleep(K_MSEC(2000));
 
         bt1036c_at_send("AUDROUTE=1"); // Start A2DP communication of I2S data received

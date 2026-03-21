@@ -30,10 +30,13 @@ const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
 // User buttons data structures
 const struct gpio_dt_spec ubtn[USER_BUTTONS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(button1), gpios),
-                                                      GPIO_DT_SPEC_GET(DT_NODELABEL(button2), gpios),
-                                                      GPIO_DT_SPEC_GET(DT_NODELABEL(button3), gpios),
-                                                      GPIO_DT_SPEC_GET(DT_NODELABEL(button4), gpios)};
+                                                  GPIO_DT_SPEC_GET(DT_NODELABEL(button2), gpios),
+                                                  GPIO_DT_SPEC_GET(DT_NODELABEL(button3), gpios),
+                                                  GPIO_DT_SPEC_GET(DT_NODELABEL(button4), gpios)};
 static struct gpio_callback buttons_cb;
+uint8_t right;
+uint8_t left;
+uint8_t set;
 
 // I2S data structures
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
@@ -68,6 +71,7 @@ static void dsp_adt(int32_t *sample);
 
 static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
 static void data_elab(int32_t *pmem, uint32_t block_size);
+static uint16_t bt_peer_select(struct bluetooth_peers *peers, int16_t size);
 
 const float max = MAX_LIMIT;
 const float min = MIN_LIMIT;
@@ -167,7 +171,7 @@ static int uart_init(void)
  */
 static void bt_init(void)
 {
-    bt1036c_config(uart0_dev, TXRX_MODULE);
+    bt1036c_config(uart0_dev, bt_peer_select, TXRX_MODULE);
 }
 
 /**
@@ -245,6 +249,35 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif
     }
 #endif // ENABLE_SIGNAL_GEN
+}
+
+static uint16_t bt_peer_select(struct bluetooth_peers *peers, int16_t size)
+{
+    uint8_t peer_idex = 0;
+
+    while (set == 0)
+    {
+        // Set a string to be shown onto the display
+        ssd1306_strToShow(peers[0].name);
+        ssd1306_event_set(SHOW_STRING);
+
+        k_sleep(K_MSEC(100));
+
+        if (right)
+        {
+            right = 0;
+            peer_idex = ((peer_idex + 1) % size);
+        }
+        else if (left)
+        {
+            left = 0;
+            peer_idex = (peer_idex == 0) ? (size - 1) : (peer_idex - 1);
+        }
+    }
+
+    set = 0;
+
+    return peer_idex;
 }
 
 static int display_init(void)
@@ -350,20 +383,23 @@ static void dsp_amplifier(int32_t *sample)
 
 static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+    right = 0;
+    left = 0;
+    set = 0;
+
     if (pins == BIT(23))
     {
-        ssd1306_event_set(EV1);
+        right = 1;
     }
     else if (pins == BIT(24))
     {
-        ssd1306_event_set(EV2);
+        left = 1;
     }
     else if (pins == BIT(8))
     {
-        ssd1306_event_set(EV3);
+        set = 1;
     }
     else if (pins == BIT(9))
     {
-        ssd1306_event_set(EV4);
     }
 }

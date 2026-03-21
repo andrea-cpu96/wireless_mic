@@ -9,7 +9,15 @@
 #define BT103036C_CONFIG_TX 0
 #define BT103036C_CONFIG_RX 1
 
-void bt1036c_config(const struct device *uart, const uint8_t txrx_config);
+struct bluetooth_peers
+{
+    char name[100];
+    char mac[100];
+};
+
+typedef uint16_t (*bt1036c_peers_cb)(struct bluetooth_peers *peers, int16_t size); // Callback function for peers setting
+
+void bt1036c_config(const struct device *uart,  bt1036c_peers_cb cb, const uint8_t txrx_config);
 void bt1036c_at_send(const char *cmd);
 
 #endif /* BT1036C_DRV_H */

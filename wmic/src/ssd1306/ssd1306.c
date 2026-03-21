@@ -19,6 +19,7 @@ typedef struct display_spec
     uint8_t font_height;
 } display_spec_t;
 
+char dis_str[100];
 display_spec_t display_handler;
 struct display_capabilities capabilities;
 display_event_t ssd1306_event;
@@ -47,6 +48,11 @@ int ssd1306_config(const struct device *i2c)
                     8, 0, K_MSEC(500));
 
     return 0;
+}
+
+void ssd1306_strToShow(char *str)
+{
+    strcpy(dis_str, str);
 }
 
 void ssd1306_turn_on(void)
@@ -109,6 +115,9 @@ static void display_process(void)
         break;
     case EV4:
         strcpy(text, "EV4");
+        break;
+    case SHOW_STRING:
+        strcpy(text, dis_str);
         break;
     default:
         break;
