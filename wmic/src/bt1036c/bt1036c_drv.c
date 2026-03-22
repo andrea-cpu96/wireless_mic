@@ -11,16 +11,14 @@
 
 #define RX_BUFF_SIZE 500
 
-#define BT1036C_DECODE_THREAD_STACK 1024
-K_THREAD_STACK_DEFINE(bt1036c_decode_stack, BT1036C_DECODE_THREAD_STACK);
+#define BT1036C_DECODE_THREAD_STACK (1024)
+#define BT1036C_DECODE_THREAD_PRIORITY 7
 
+K_THREAD_STACK_DEFINE(bt1036c_decode_stack, BT1036C_DECODE_THREAD_STACK);
 K_SEM_DEFINE(uart_sem, 0, 1);
 
-static struct k_thread bt1036c_decode_tcb;
-
-const static struct device *uart_int;
-
-struct bt1036c_status_handler
+// BT data structures
+struct bt1036c_status_t
 {
     int devstat;
     int pwrstat;
@@ -35,33 +33,43 @@ struct bt1036c_status_handler
     int ok;
     char name[30];
     int i2scfg;
+};
+struct bt1036c_handler_t
+{
+    const struct device *uart_int;
+    struct bt1036c_status_t bt1036c_status;
     struct bluetooth_peers peer[10];
-    uint8_t peer_num;
-} bt1036c_status = {0};
+    uint16_t peer_num;
+} static bt1036c_handler = {0};
 
-static void uart_write_str(const char *s);
-static int decode_bt1036c_data(char *s);
-static void bt1036c_decode_thread(void *a, void *b, void *c);
-static void uart_irq_cb(const struct device *dev, void *user_data);
-static void extract_name(const char *input, struct bluetooth_peers *peer);
-static void extract_mac(const char *input, struct bluetooth_peers *peer);
+static struct k_thread bt1036c_decode_tcb;
 
-// Temporary buffer used to read from FIFO in IRQ context
-static uint8_t irq_buf[128];
+static uint8_t irq_buf[128]; // Temporary buffer used to read from FIFO in IRQ context
 static uint8_t cmd_buff_rx[RX_BUFF_SIZE];
 static uint16_t rx_buff_idx = 0;
 
+static void bt1036c_decode_thread(void *a, void *b, void *c);
+
+static void uart_irq_cb(const struct device *dev, void *user_data);
+
+static void uart_write_str(const char *s);
+static int decode_bt1036c_data(char *s);
+static void extract_name(const char *input, struct bluetooth_peers *peer);
+static void extract_mac(const char *input, struct bluetooth_peers *peer);
+
 /**
  * @brief bt1036c_config
- *
- * @param uart
- * @param txrx_config
+ * 
+ * @param uart 
+ * @param cb 
+ * @param txrx_config 
+ * @return int 
  */
-void bt1036c_config(const struct device *uart,  bt1036c_peers_cb cb, const uint8_t txrx_config)
+int bt1036c_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t txrx_config)
 {
     char str_mac[100];
 
-    uart_int = uart;
+    bt1036c_handler.uart_int = uart;
 
     uart_irq_callback_user_data_set(uart, uart_irq_cb, NULL);
     uart_irq_rx_enable(uart);
@@ -71,7 +79,7 @@ void bt1036c_config(const struct device *uart,  bt1036c_peers_cb cb, const uint8
                     BT1036C_DECODE_THREAD_STACK,
                     bt1036c_decode_thread,
                     NULL, NULL, NULL,
-                    3, 0, K_NO_WAIT);
+                    BT1036C_DECODE_THREAD_PRIORITY, 0, K_NO_WAIT);
 
     // Reset the module to default settings
     bt1036c_at_send("RESTORE");
@@ -110,28 +118,24 @@ void bt1036c_config(const struct device *uart,  bt1036c_peers_cb cb, const uint8
     bt1036c_at_send("REBOOT"); // Reboot to make changes effective
     k_sleep(K_MSEC(1000));
 
-    bt1036c_at_send("A2DPSTAT"); // Read A2DP status
-    k_sleep(K_MSEC(200));
-
     if (txrx_config != BT103036C_CONFIG_RX)
     {
         bt1036c_at_send("SCAN=1"); // Scan advertised MACs address
-        k_sleep(K_MSEC(10000));    // Longer wait to scan all the peripherals available
+        k_sleep(K_MSEC(1000));
 
-        bt1036c_at_send("A2DPSTAT"); // Should be connected (3)
-        k_sleep(K_MSEC(200));
-
-        // Call calback for peer selction 
-        uint16_t peer_idx = cb(bt1036c_status.peer, bt1036c_status.peer_num);
+        // Call calback for peer selction
+        uint16_t peer_idx = cb(bt1036c_handler.peer, &bt1036c_handler.peer_num);
 
         // Set selected MAC address
-        snprintf(str_mac, sizeof(str_mac), "A2DPCONN=%s", (const char *)bt1036c_status.peer[peer_idx].mac);
+        snprintf(str_mac, sizeof(str_mac), "A2DPCONN=%s", (const char *)bt1036c_handler.peer[peer_idx].mac);
         bt1036c_at_send(str_mac); // Hardwired MAC address
         k_sleep(K_MSEC(2000));
 
         bt1036c_at_send("AUDROUTE=1"); // Start A2DP communication of I2S data received
         k_sleep(K_MSEC(100));
     }
+
+    return 0;
 }
 
 /**
@@ -166,7 +170,7 @@ static void bt1036c_decode_thread(void *a, void *b, void *c)
         k_sem_take(&uart_sem, K_FOREVER);
 
         // Avoid UART interrupt when here
-        uart_irq_rx_disable(uart_int);
+        uart_irq_rx_disable(bt1036c_handler.uart_int);
 
         // Consider the distance between the two indexes
         // NOTE; summing RX_BUFF_SIZE is necessary to consider also the case in which
@@ -225,7 +229,7 @@ static void bt1036c_decode_thread(void *a, void *b, void *c)
             }
         }
         // Enable UART interrupt and wait for data to accumulate
-        uart_irq_rx_enable(uart_int);
+        uart_irq_rx_enable(bt1036c_handler.uart_int);
         k_sleep(K_MSEC(1));
     }
 }
@@ -276,7 +280,7 @@ static void uart_write_str(const char *s)
 {
     for (size_t i = 0; i < strlen(s); i++)
     {
-        uart_poll_out(uart_int, s[i]);
+        uart_poll_out(bt1036c_handler.uart_int, s[i]);
     }
 }
 
@@ -300,7 +304,7 @@ static int decode_bt1036c_data(char *s)
         // OK
         if (strcmp(s, "OK") == 0)
         {
-            bt1036c_status.ok = 1;
+            bt1036c_handler.bt1036c_status.ok = 1;
             return 0;
         }
         else
@@ -320,93 +324,93 @@ static int decode_bt1036c_data(char *s)
     // +DEVSTAT
     if (strcmp(cmd, "+DEVSTAT") == 0)
     {
-        bt1036c_status.devstat = atoi(data);
+        bt1036c_handler.bt1036c_status.devstat = atoi(data);
         return 0;
     }
 
     // +PWRSTAT
     if (strcmp(cmd, "+PWRSTAT") == 0)
     {
-        bt1036c_status.pwrstat = atoi(data);
+        bt1036c_handler.bt1036c_status.pwrstat = atoi(data);
         return 0;
     }
 
     // +VER
     if (strcmp(cmd, "+VER") == 0)
     {
-        strncpy(bt1036c_status.ver, data, sizeof(bt1036c_status.ver) - 1);
+        strncpy(bt1036c_handler.bt1036c_status.ver, data, sizeof(bt1036c_handler.bt1036c_status.ver) - 1);
         return 0;
     }
 
     // +PROFILE
     if (strcmp(cmd, "+PROFILE") == 0)
     {
-        bt1036c_status.profile = atoi(data);
+        bt1036c_handler.bt1036c_status.profile = atoi(data);
         return 0;
     }
 
     // +SPPSTAT
     if (strcmp(cmd, "+SPPSTAT") == 0)
     {
-        bt1036c_status.sppstat = atoi(data);
+        bt1036c_handler.bt1036c_status.sppstat = atoi(data);
         return 0;
     }
 
     // +GATTSTAT
     if (strcmp(cmd, "+GATTSTAT") == 0)
     {
-        bt1036c_status.gattstat = atoi(data);
+        bt1036c_handler.bt1036c_status.gattstat = atoi(data);
         return 0;
     }
 
     // +A2DPSTAT
     if (strcmp(cmd, "+A2DPSTAT") == 0)
     {
-        bt1036c_status.a2dpstat = atoi(data);
+        bt1036c_handler.bt1036c_status.a2dpstat = atoi(data);
         return 0;
     }
 
     // +AVRCPSTAT
     if (strcmp(cmd, "+AVRCPSTAT") == 0)
     {
-        bt1036c_status.avrcpstat = atoi(data);
+        bt1036c_handler.bt1036c_status.avrcpstat = atoi(data);
         return 0;
     }
 
     // +HFPSTAT
     if (strcmp(cmd, "+HFPSTAT") == 0)
     {
-        bt1036c_status.hfpstat = atoi(data);
+        bt1036c_handler.bt1036c_status.hfpstat = atoi(data);
         return 0;
     }
 
     // +PBSTAT
     if (strcmp(cmd, "+PBSTAT") == 0)
     {
-        bt1036c_status.pbstat = atoi(data);
+        bt1036c_handler.bt1036c_status.pbstat = atoi(data);
         return 0;
     }
 
     // +NAME
     if (strcmp(cmd, "+NAME") == 0)
     {
-        strncpy(bt1036c_status.name, data, sizeof(bt1036c_status.name) - 1);
+        strncpy(bt1036c_handler.bt1036c_status.name, data, sizeof(bt1036c_handler.bt1036c_status.name) - 1);
         return 0;
     }
 
     // +I2SCFG
     if (strcmp(cmd, "+I2SCFG") == 0)
     {
-        bt1036c_status.i2scfg = atoi(data);
+        bt1036c_handler.bt1036c_status.i2scfg = atoi(data);
         return 0;
     }
 
     // +SCAN
     if (strcmp(cmd, "+SCAN") == 0)
     {
-        extract_name(data, &bt1036c_status.peer[bt1036c_status.peer_num]);
-        extract_mac(data, &bt1036c_status.peer[bt1036c_status.peer_num]);
-        bt1036c_status.peer_num++;
+        extract_name(data, &bt1036c_handler.peer[bt1036c_handler.peer_num]);
+        extract_mac(data, &bt1036c_handler.peer[bt1036c_handler.peer_num]);
+        bt1036c_handler.peer_num++;
         return 0;
     }
     return -1;

@@ -23,7 +23,8 @@
 
 #define USER_BUTTONS_N 4
 
-K_MEM_SLAB_DEFINE(rxtx_mem_slab, BLOCK_SIZE, NUM_BLOCKS, 4);
+const float max = MAX_LIMIT;
+const float min = MIN_LIMIT;
 
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
@@ -40,8 +41,6 @@ uint8_t set;
 
 // I2S data structures
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
-i2s_drv_config_t hi2s;
-static struct i2s_config i2s_cfg_local = {0};
 
 // UART data structures
 const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
@@ -49,44 +48,27 @@ const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
 // I2C data structures
 const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
-static int gpios_init(void);
-static int uart_init(void);
-
-static int audio_init(void);
-static void bt_init(void);
-
-static int display_init(void);
-
-static void dsp_amplifier(int32_t *sample);
-
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
 static void dsp_filter(int32_t *pmem);
 #endif // ENABLE_DSP_FILTER
-
 #if (ENABLE_DSP_ADT_EFFECT)
 static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
 #endif // ENABLE_DSP_ADT_EFFECT
+static void dsp_amplifier(int32_t *sample);
+
+static int gpios_init(void);
+static int display_init(void);
+static int bt_init(void);
+static int audio_init(void);
 
 static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
 static void data_elab(int32_t *pmem, uint32_t block_size);
-static uint16_t bt_peer_select(struct bluetooth_peers *peers, int16_t size);
-
-const float max = MAX_LIMIT;
-const float min = MIN_LIMIT;
+static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size);
 
 int main(void)
 {
-    // GPIOS init
-    gpios_init();
-
-    // UART init
-    uart_init();
-
-    // display init
-    display_init();
-
     // Filter init
 #if (ENABLE_DSP_FILTER)
     dsp_filter_init();
@@ -96,6 +78,12 @@ int main(void)
 #if (ENABLE_DSP_ADT_EFFECT)
     dsp_adt_init();
 #endif // ENABLE_DSP_ADT_EFFECT
+
+    // GPIOS init
+    gpios_init();
+
+    // display init
+    display_init();
 
     // Bluetooth init
     bt_init();
@@ -110,188 +98,9 @@ int main(void)
 
     while (1)
     {
-        k_sleep(K_MSEC(500));
+        k_sleep(K_FOREVER);
     }
     return 0;
-}
-
-/**
- * @brief audio_init
- *
- * @return int
- */
-static int audio_init(void)
-{
-    // Check device is ready
-    if (!device_is_ready(i2s_dev))
-    {
-        printf("I2S device not ready\n");
-        return -1;
-    }
-
-    // Configure I2S
-    hi2s.dev_i2s = i2s_dev;
-    hi2s.i2s_cfg_dir = I2S_DIR_BOTH;
-    hi2s.i2s_cfg = &i2s_cfg_local;
-    hi2s.i2s_elab = data_elab;
-
-    i2s_cfg_local.word_size = I2S_WORD_BYTES * 8;
-    i2s_cfg_local.channels = CHANNELS_NUMBER;
-    i2s_cfg_local.format = I2S_FMT_DATA_FORMAT_I2S;
-    i2s_cfg_local.frame_clk_freq = SAMPLE_FREQ;
-    i2s_cfg_local.block_size = BLOCK_SIZE;
-    i2s_cfg_local.timeout = I2S_RX_DELAY;                                      // This is the max read delay before the i2s_read fails
-    i2s_cfg_local.options = I2S_OPT_FRAME_CLK_MASTER | I2S_OPT_BIT_CLK_MASTER; // Set the microcontroller as I2S master and generator of MCK and BCK
-    i2s_cfg_local.mem_slab = &rxtx_mem_slab;
-
-    return audio_config(&hi2s);
-}
-
-/**
- * @brief uart_init
- *
- * @return int
- */
-static int uart_init(void)
-{
-    // Check device is ready
-    if (!device_is_ready(uart0_dev))
-    {
-        printf("UART device not ready\n");
-        return 0;
-    }
-
-    return 1;
-}
-
-/**
- * @brief bt_init
- *
- * @return void
- */
-static void bt_init(void)
-{
-    bt1036c_config(uart0_dev, bt_peer_select, TXRX_MODULE);
-}
-
-/**
- * @brief gpios_init
- *
- * @return int
- */
-static int gpios_init(void)
-{
-    int ubtn_bit = 0;
-
-    // Signaling LED
-    if (!gpio_is_ready_dt(&led))
-    {
-        return 0;
-    }
-    gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
-
-    // User buttons
-    for (int i = 0; i < USER_BUTTONS_N; i++)
-    {
-        ubtn_bit |= BIT(ubtn[i].pin);
-
-        if (!gpio_is_ready_dt(&ubtn[i]))
-        {
-            return 0;
-        }
-        gpio_pin_configure_dt(&ubtn[i], GPIO_INPUT);
-        gpio_pin_interrupt_configure_dt(&ubtn[i], GPIO_INT_EDGE_TO_ACTIVE);
-    }
-
-    gpio_init_callback(&buttons_cb, buttons_handler_cb, ubtn_bit);
-    gpio_add_callback(ubtn[0].port, &buttons_cb);
-
-    return 1;
-}
-
-/**
- * @brief data_elab
- *
- * @return void
- */
-static void data_elab(int32_t *pmem, uint32_t block_size)
-{
-    int size = block_size / sizeof(int32_t);
-
-#if (ENABLE_SIGNAL_GEN)
-    for (int i = 0; i < size - 1; i += 2)
-    {
-        pmem[i] = (int32_t)(signals_get_sample() * (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
-        pmem[i] = (pmem[i] << 16);                                    // Shift to upper 16 bits (according to bluetooth module data format)
-        pmem[i + 1] = pmem[i];                                        // Right channel equal to left channel
-#if (ENABLE_DSP_FILTER)
-        dsp_filter(&pmem[i]);
-#endif // ENABLE_DSP_FILTER
-    }
-#else
-    for (int i = 0; i < size - 1; i += 2)
-    {
-        if ((pmem[i] <= max) && (pmem[i] >= min))
-        {
-            dsp_amplifier(&pmem[i]);
-            dsp_amplifier(&pmem[i + 1]);
-        }
-#if (ENABLE_STEREO_DIFF)
-        int32_t diff = pmem[i + 1] - pmem[i]; // right - left
-        pmem[i] = diff;
-        pmem[i + 1] = diff;
-#endif // ENABLE_STEREO_DIFF
-#if (ENABLE_DSP_FILTER)
-        dsp_filter(&pmem[i]);
-#endif // ENABLE_DSP_FILTER
-#if (ENABLE_DSP_ADT_EFFECT)
-        dsp_adt(&pmem[i]);
-#endif
-    }
-#endif // ENABLE_SIGNAL_GEN
-}
-
-static uint16_t bt_peer_select(struct bluetooth_peers *peers, int16_t size)
-{
-    uint8_t peer_idex = 0;
-
-    while (set == 0)
-    {
-        // Set a string to be shown onto the display
-        ssd1306_strToShow(peers[0].name);
-        ssd1306_event_set(SHOW_STRING);
-
-        k_sleep(K_MSEC(100));
-
-        if (right)
-        {
-            right = 0;
-            peer_idex = ((peer_idex + 1) % size);
-        }
-        else if (left)
-        {
-            left = 0;
-            peer_idex = (peer_idex == 0) ? (size - 1) : (peer_idex - 1);
-        }
-    }
-
-    set = 0;
-
-    return peer_idex;
-}
-
-static int display_init(void)
-{
-    // Check device is ready
-    if (!device_is_ready(i2c1_dev))
-    {
-        printf("I2C device not ready\n");
-        return 0;
-    }
-
-    ssd1306_config(i2c1_dev);
-
-    return 1;
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -365,6 +174,11 @@ static void dsp_adt(int32_t *sample)
 }
 #endif // ENABLE_DSP_ADT_EFFECT
 
+/**
+ * @brief dsp_amplifier
+ *
+ * @param sample
+ */
 static void dsp_amplifier(int32_t *sample)
 {
     uint32_t voice = ((*sample) < 0) ? -(*sample) : (*sample);
@@ -381,6 +195,173 @@ static void dsp_amplifier(int32_t *sample)
     return;
 }
 
+/**
+ * @brief gpios_init
+ *
+ * @return int
+ */
+static int gpios_init(void)
+{
+    int ubtn_bit = 0;
+
+    // Signaling LED
+    if (!gpio_is_ready_dt(&led))
+    {
+        return -1;
+    }
+    gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+
+    // User buttons
+    for (int i = 0; i < USER_BUTTONS_N; i++)
+    {
+        ubtn_bit |= BIT(ubtn[i].pin);
+
+        if (!gpio_is_ready_dt(&ubtn[i]))
+        {
+            return -1;
+        }
+        gpio_pin_configure_dt(&ubtn[i], GPIO_INPUT);
+        gpio_pin_interrupt_configure_dt(&ubtn[i], GPIO_INT_EDGE_TO_ACTIVE);
+    }
+
+    gpio_init_callback(&buttons_cb, buttons_handler_cb, ubtn_bit);
+    gpio_add_callback(ubtn[0].port, &buttons_cb);
+
+    return 0;
+}
+
+/**
+ * @brief display_init
+ *
+ * @return int
+ */
+static int display_init(void)
+{
+    // Check device is ready
+    if (!device_is_ready(i2c1_dev))
+    {
+        printf("I2C device not ready\n");
+        return -1;
+    }
+
+    return ssd1306_config();
+}
+
+/**
+ * @brief bt_init
+ *
+ * @return int
+ */
+static int bt_init(void)
+{
+    // Check device is ready
+    if (!device_is_ready(uart0_dev))
+    {
+        printf("UART device not ready\n");
+        return -1;
+    }
+
+    return bt1036c_config(uart0_dev, bt_peer_select, TXRX_MODULE);
+}
+
+/**
+ * @brief audio_init
+ *
+ * @return int
+ */
+static int audio_init(void)
+{
+    // Check device is ready
+    if (!device_is_ready(i2s_dev))
+    {
+        printf("I2S device not ready\n");
+        return -1;
+    }
+
+    return audio_config(i2s_dev, data_elab);
+}
+
+/**
+ * @brief data_elab
+ *
+ * @return void
+ */
+static void data_elab(int32_t *pmem, uint32_t block_size)
+{
+    int size = block_size / sizeof(int32_t);
+
+#if (ENABLE_SIGNAL_GEN)
+    for (int i = 0; i < size - 1; i += 2)
+    {
+        pmem[i] = (int32_t)(signals_get_sample() * (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
+        pmem[i] = (pmem[i] << 16);                                    // Shift to upper 16 bits (according to bluetooth module data format)
+        pmem[i + 1] = pmem[i];                                        // Right channel equal to left channel
+#if (ENABLE_DSP_FILTER)
+        dsp_filter(&pmem[i]);
+#endif // ENABLE_DSP_FILTER
+    }
+#else
+    for (int i = 0; i < size - 1; i += 2)
+    {
+        if ((pmem[i] <= max) && (pmem[i] >= min))
+        {
+            dsp_amplifier(&pmem[i]);
+            dsp_amplifier(&pmem[i + 1]);
+        }
+#if (ENABLE_STEREO_DIFF)
+        int32_t diff = pmem[i + 1] - pmem[i]; // right - left
+        pmem[i] = diff;
+        pmem[i + 1] = diff;
+#endif // ENABLE_STEREO_DIFF
+#if (ENABLE_DSP_FILTER)
+        dsp_filter(&pmem[i]);
+#endif // ENABLE_DSP_FILTER
+#if (ENABLE_DSP_ADT_EFFECT)
+        dsp_adt(&pmem[i]);
+#endif
+    }
+#endif // ENABLE_SIGNAL_GEN
+}
+
+static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size)
+{
+    uint8_t peer_idex = 0;
+    uint8_t peers_n = 0;
+
+    while (set == 0)
+    {
+        peers_n = *size;
+
+        // Set a string to be shown onto the display
+        ssd1306_strToShow(peers[0].name);
+        ssd1306_event_set(SHOW_STRING);
+
+        k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
+
+        if (right)
+        {
+            right = 0;
+            peer_idex = ((peer_idex + 1) % peers_n);
+        }
+        else if (left)
+        {
+            left = 0;
+            peer_idex = (peer_idex == 0) ? (peers_n - 1) : (peer_idex - 1);
+        }
+    }
+
+    set = 0;
+
+    return peer_idex;
+}
+
+/**
+ * @brief buttons_handler_cb
+ *
+ * @param dev
+ * @param cb
+ * @param pins
+ */
 static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
     right = 0;
