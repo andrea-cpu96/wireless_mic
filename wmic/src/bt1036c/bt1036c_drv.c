@@ -2,6 +2,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/sys/printk.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,7 @@
 #include <ctype.h>
 
 #define RX_BUFF_SIZE 500
+#define BT1036C_MAX_PEERS 10
 
 #define BT1036C_DECODE_THREAD_STACK (1024)
 #define BT1036C_DECODE_THREAD_PRIORITY 7
@@ -38,7 +40,7 @@ struct bt1036c_handler_t
 {
     const struct device *uart_int;
     struct bt1036c_status_t bt1036c_status;
-    struct bluetooth_peers peer[10];
+    struct bluetooth_peers peer[BT1036C_MAX_PEERS];
     uint16_t peer_num;
 } static bt1036c_handler = {0};
 
@@ -118,9 +120,15 @@ int bt1036c_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t
     bt1036c_at_send("REBOOT"); // Reboot to make changes effective
     k_sleep(K_MSEC(1000));
 
+    if (bt1036c_handler.bt1036c_status.name[0] == '\0')
+    {
+        printk("BT module not found on UART\n");
+        return -1;
+    }
+
     if (txrx_config != BT103036C_CONFIG_RX)
     {
-        bt1036c_at_send("SCAN=1"); // Scan advertised MACs address
+        bt1036c_at_send("SCAN=1"); // Scan advertised MAC addresses
         k_sleep(K_MSEC(1000));
 
         // Call calback for peer selction
@@ -263,7 +271,7 @@ static void uart_irq_cb(const struct device *dev, void *user_data)
             {
                 memcpy(&cmd_buff_rx[rx_buff_idx], irq_buf, space_remaining);
                 rx_buff_idx = 0;
-                memcpy(&cmd_buff_rx[rx_buff_idx], irq_buf, (rx - space_remaining));
+                memcpy(&cmd_buff_rx[rx_buff_idx], irq_buf + space_remaining, (rx - space_remaining));
                 rx_buff_idx = (rx - space_remaining);
             }
             k_sem_give(&uart_sem);
@@ -408,6 +416,10 @@ static int decode_bt1036c_data(char *s)
     // +SCAN
     if (strcmp(cmd, "+SCAN") == 0)
     {
+        if (bt1036c_handler.peer_num >= BT1036C_MAX_PEERS)
+        {
+            return 0;
+        }
         extract_name(data, &bt1036c_handler.peer[bt1036c_handler.peer_num]);
         extract_mac(data, &bt1036c_handler.peer[bt1036c_handler.peer_num]);
         bt1036c_handler.peer_num++;
