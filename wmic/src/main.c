@@ -22,6 +22,7 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/printk.h>
+#include <zephyr/sys/reboot.h>
 
 #include <stdio.h>
 #include <arm_math.h>
@@ -97,16 +98,32 @@ int main(void)
 #endif // ENABLE_DSP_ADT_EFFECT
 
     // GPIOS init
-    gpios_init();
+    if (gpios_init() != 0)
+    {
+        printk("GPIO init failed, resetting...\n");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
 
     // display init
-    display_init();
+    if (display_init() != 0)
+    {
+        printk("Display init failed, resetting...\n");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
 
     // Bluetooth init
-    bt_init();
+    if (bt_init() != 0)
+    {
+        printk("Bluetooth init failed, resetting...\n");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
 
     // Audio init
-    audio_init();
+    if (audio_init() != 0)
+    {
+        printk("Audio init failed, resetting...\n");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
 
     k_sleep(K_MSEC(500));
 

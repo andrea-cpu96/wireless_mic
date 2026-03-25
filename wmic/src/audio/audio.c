@@ -6,6 +6,7 @@
 #include <stdio.h>
 /* Debug support */
 #include <zephyr/sys/printk.h>
+#include <zephyr/sys/reboot.h>
 
 // I2S defines
 #define CHANNELS_NUMBER 2
@@ -111,7 +112,21 @@ static void audio_txrx_thread(void *a, void *b, void *c)
     while (1)
     {
         // Thread is blocked by i2s_read untill new data arrive
-        i2s_continue_transfer();
+        if (i2s_continue_transfer() < 0)
+        {
+            printk("I2S transfer error, attempting recovery...\n");
+            i2s_trigger(audio_handler.dev_i2s, I2S_DIR_BOTH, I2S_TRIGGER_DROP);
+            k_sleep(K_MSEC(10));
+
+            if (i2s_start_transfer() < 0 || i2s_trigger_txrx() < 0)
+            {
+                printk("I2S recovery failed, resetting...\n");
+                sys_reboot(SYS_REBOOT_COLD);
+            }
+
+            NRF_I2S0->CONFIG.RATIO = 6;
+            NRF_I2S0->CONFIG.CLKCONFIG = (0x0101);
+        }
     }
 }
 
