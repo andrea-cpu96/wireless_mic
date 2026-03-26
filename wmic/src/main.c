@@ -57,6 +57,8 @@ uint8_t right;
 uint8_t left;
 uint8_t set;
 
+static int64_t display_stb_timer = 0;
+
 // I2S data structures
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 
@@ -65,6 +67,8 @@ const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
 
 // I2C data structures
 const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
+
+static void workq_1s(struct k_work *work);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
@@ -84,6 +88,10 @@ static int audio_init(void);
 static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
 static void data_elab(int32_t *pmem, uint32_t block_size);
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size);
+
+static void display_stb(void);
+
+K_WORK_DELAYABLE_DEFINE(workq, workq_1s);
 
 int main(void)
 {
@@ -130,11 +138,25 @@ int main(void)
     // App is running
     gpio_pin_set(led.port, led.pin, 1);
 
+    // Schedule 1s work queue
+    k_work_schedule(&workq, K_SECONDS(1));
+
     while (1)
     {
         k_sleep(K_FOREVER);
     }
     return 0;
+}
+
+/**
+ * @brief workq_1s
+ * 
+ * @param work 
+ */
+static void workq_1s(struct k_work *work)
+{
+    display_stb();
+    k_work_schedule(&workq, K_SECONDS(1)); 
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -402,6 +424,8 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
     left = 0;
     set = 0;
 
+    ssd1306_event_set(EV1);
+
     if (pins == BIT(23))
     {
         right = 1;
@@ -416,5 +440,28 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
     }
     else if (pins == BIT(9))
     {
+    }
+
+    // Reset the timer
+    display_stb_timer = k_uptime_get();
+}
+
+/**
+ * @brief idle_hook
+ * 
+ */
+static void display_stb(void)
+{
+    // Turn off the display after 10s of inactivity
+    if(ssd1306_get_status() != DISPLAY_OFF)
+    {
+        if ((k_uptime_get() - display_stb_timer) > DISPLAY_STB_TIME_MS)
+        {
+            ssd1306_turn_off();
+        }
+    }
+    else
+    {
+        // Do nothing
     }
 }

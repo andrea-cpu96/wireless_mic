@@ -72,6 +72,7 @@ void ssd1306_strToShow(const char *str)
 void ssd1306_turn_on(void)
 {
     display_blanking_off(display_handler.display);
+    display_handler.display_state = DISPLAY_ON;
 }
 
 /**
@@ -81,6 +82,7 @@ void ssd1306_turn_on(void)
 void ssd1306_turn_off(void)
 {
     display_blanking_on(display_handler.display);
+    display_handler.display_state = DISPLAY_OFF;
 }
 
 /**
@@ -92,6 +94,16 @@ void ssd1306_event_set(display_event_t event)
 {
     ssd1306_event = event;
     k_sem_give(&display_event_sem);
+}
+
+/**
+ * @brief ssd1306_get_status
+ * 
+ * @return display_state_t 
+ */
+display_state_t ssd1306_get_status(void)
+{
+    return display_handler.display_state;
 }
 
 /**
