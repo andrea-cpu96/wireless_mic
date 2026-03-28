@@ -120,6 +120,7 @@ int main(void)
     }
 
     // Bluetooth init
+    /* 
     if (bt_init() != 0)
     {
         printk("Bluetooth init failed, resetting...\n");
@@ -132,7 +133,7 @@ int main(void)
         printk("Audio init failed, resetting...\n");
         sys_reboot(SYS_REBOOT_COLD);
     }
-
+*/
     k_sleep(K_MSEC(500));
 
     // App is running
@@ -424,14 +425,30 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
     left = 0;
     set = 0;
 
-    ssd1306_event_set(EV1);
-
     if (pins == BIT(23))
     {
         right = 1;
+
+        // Show demo page
+        display_pages_t page;
+        strcpy(page.title, "DEMO");
+        strcpy(page.par[0].title, "PAR1");
+        strcpy(page.par[1].title, "PAR2");
+        strcpy(page.par[2].title, "PAR3");
+        strcpy(page.par[3].title, "PAR4");
+
+        strcpy(page.par[0].val, "0");
+        strcpy(page.par[1].val, "0");
+        strcpy(page.par[2].val, "0");
+        strcpy(page.par[3].val, "0");
+
+        page.par_select = 0; 
+        ssd1306_pageToShow(page);
+        ssd1306_event_set(SHOW_PAGE);
     }
     else if (pins == BIT(24))
     {
+        ssd1306_event_set(EV1);
         left = 1;
     }
     else if (pins == BIT(8))

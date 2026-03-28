@@ -7,6 +7,8 @@
 
 #include <stdio.h>
 
+#include "my_fonts.h"
+
 #define DISPLAY_THREAD_STACK (4096)
 #define DISPLAY_THREAD_PRIORITY 8
 
@@ -21,15 +23,20 @@ struct display_handler_t
     uint8_t font_width;
     uint8_t font_height;
     char dis_str[100];
+    display_pages_t page;
     display_state_t display_state;
 } static display_handler;
 static display_event_t ssd1306_event;
+
+int my_font_idx = 0;
 
 static struct k_thread display_tcb;
 
 static void display_thread(void *a, void *b, void *c);
 
 static void display_process(void);
+static void show_str(char *text);
+static void show_page(void);
 
 /**
  * @brief ssd1306_config
@@ -98,12 +105,28 @@ void ssd1306_event_set(display_event_t event)
 
 /**
  * @brief ssd1306_get_status
- * 
- * @return display_state_t 
+ *
+ * @return display_state_t
  */
 display_state_t ssd1306_get_status(void)
 {
     return display_handler.display_state;
+}
+
+/**
+ * @brief ssd1306_pageToShow
+ * 
+ * @param page 
+ */
+void ssd1306_pageToShow(display_pages_t page)
+{
+    strcpy(display_handler.page.title, page.title);
+    display_handler.page.par_select = page.par_select;
+    for(int i = 0 ; i < 10 ; i++)
+    {
+        strcpy(display_handler.page.par[i].title, page.par[i].title);
+        strcpy(display_handler.page.par[i].val, page.par[i].val);
+    }
 }
 
 /**
@@ -127,7 +150,10 @@ static void display_thread(void *a, void *b, void *c)
         printf("CFB init failed\n");
     }
 
-    // Set font 0 (5x8)
+    // Get my font index
+    my_font_idx = cfb_get_numof_fonts(display_handler.display) - 1;
+
+    // Set font 0
     cfb_framebuffer_set_font(display_handler.display, 0);
 
     // Read font sizes
@@ -156,25 +182,40 @@ static void display_process(void)
     {
     case EV1:
         strcpy(text, "EV1");
+        show_str(text);
         break;
     case EV2:
         strcpy(text, "EV2");
+        show_str(text);
         break;
     case EV3:
         strcpy(text, "EV3");
+        show_str(text);
         break;
     case EV4:
         strcpy(text, "EV4");
+        show_str(text);
         break;
     case SHOW_STRING:
         strcpy(text, display_handler.dis_str);
+        show_str(text);
+        break;
+    case SHOW_PAGE:
+        show_page();
         break;
     default:
         break;
     }
 
     ssd1306_turn_on();
+}
 
+/**
+ * @brief show_str
+ *
+ */
+static void show_str(char *text)
+{
     cfb_framebuffer_clear(display_handler.display, true);
 
     size_t len = strlen(text);
@@ -186,5 +227,37 @@ static void display_process(void)
     cfb_print(display_handler.display, text, x, y);
 
     // Display update
+    cfb_framebuffer_finalize(display_handler.display);
+}
+
+/**
+ * @brief show_page
+ *
+ */
+static void show_page(void)
+{
+    struct cfb_position p1 = { .x = 3, .y = 16 };
+    struct cfb_position p2 = { .x = 7, .y = 19 };
+
+    cfb_framebuffer_clear(display_handler.display, true);
+
+    cfb_framebuffer_set_font(display_handler.display, 0);
+    cfb_print(display_handler.display, display_handler.page.title, 0, 0);
+    cfb_framebuffer_finalize(display_handler.display);
+
+    cfb_framebuffer_set_font(display_handler.display, my_font_idx);
+
+    cfb_draw_rect(display_handler.display, &p1, &p2);
+
+    cfb_print(display_handler.display, display_handler.page.par[0].title, 10, 15);
+    cfb_print(display_handler.display, display_handler.page.par[1].title, 10, 22);
+    cfb_print(display_handler.display, display_handler.page.par[2].title, 75, 15);
+    cfb_print(display_handler.display, display_handler.page.par[3].title, 75, 22);
+    
+    cfb_print(display_handler.display, display_handler.page.par[0].val, 40, 15);
+    cfb_print(display_handler.display, display_handler.page.par[1].val, 40, 22);
+    cfb_print(display_handler.display, display_handler.page.par[2].val, 105, 15);
+    cfb_print(display_handler.display, display_handler.page.par[3].val, 105, 22);
+
     cfb_framebuffer_finalize(display_handler.display);
 }
