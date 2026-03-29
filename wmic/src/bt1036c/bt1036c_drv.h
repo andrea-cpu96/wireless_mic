@@ -1,4 +1,3 @@
-/* bt1036c_drv.h - Driver header for BT1036C */
 #ifndef BT1036C_DRV_H
 #define BT1036C_DRV_H
 
@@ -20,4 +19,4 @@ typedef uint16_t (*bt1036c_peers_cb)(const struct bluetooth_peers *peers, const 
 int bt1036c_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t txrx_config);
 void bt1036c_at_send(const char *cmd);
 
-#endif /* BT1036C_DRV_H */
+#endif // BT1036C_DRV_H

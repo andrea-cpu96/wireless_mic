@@ -1,0 +1,34 @@
+
+#include "pages.h"
+
+#include <stdio.h>
+
+#include "ssd1306.h"
+
+/**
+ * @brief pages_demo_page
+ * 
+ * @param idx 
+ */
+void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
+{
+        display_pages_t page;
+
+        strcpy(page.title, "DEMO");
+
+        page.EnDis = EnDis;
+
+        strcpy(page.par[0].title, "PAR1");
+        strcpy(page.par[1].title, "PAR2");
+        strcpy(page.par[2].title, "PAR3");
+        strcpy(page.par[3].title, "PAR4");
+
+        snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", v1);
+        snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", v2);
+        snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", v3);
+        snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", v4);
+
+        page.par_select = idx; 
+        ssd1306_pageToShow(page);
+        ssd1306_event_set(SHOW_PAGE);
+}

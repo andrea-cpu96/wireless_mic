@@ -27,15 +27,14 @@ struct display_handler_t
     display_state_t display_state;
 } static display_handler;
 static display_event_t ssd1306_event;
-
-int my_font_idx = 0;
+static int my_font_idx = 0;
 
 static struct k_thread display_tcb;
 
 static void display_thread(void *a, void *b, void *c);
 
 static void display_process(void);
-static void show_str(char *text);
+static void show_str(void);
 static void show_page(void);
 
 /**
@@ -122,7 +121,8 @@ void ssd1306_pageToShow(display_pages_t page)
 {
     strcpy(display_handler.page.title, page.title);
     display_handler.page.par_select = page.par_select;
-    for(int i = 0 ; i < 10 ; i++)
+    display_handler.page.EnDis = page.EnDis;
+    for(int i = 0 ; i < 4 ; i++)
     {
         strcpy(display_handler.page.par[i].title, page.par[i].title);
         strcpy(display_handler.page.par[i].val, page.par[i].val);
@@ -174,31 +174,20 @@ static void display_thread(void *a, void *b, void *c)
  */
 static void display_process(void)
 {
-    static char text[50];
-
     k_sem_take(&display_event_sem, K_FOREVER);
 
     switch (ssd1306_event)
     {
     case EV1:
-        strcpy(text, "EV1");
-        show_str(text);
         break;
     case EV2:
-        strcpy(text, "EV2");
-        show_str(text);
         break;
     case EV3:
-        strcpy(text, "EV3");
-        show_str(text);
         break;
     case EV4:
-        strcpy(text, "EV4");
-        show_str(text);
         break;
     case SHOW_STRING:
-        strcpy(text, display_handler.dis_str);
-        show_str(text);
+        show_str();
         break;
     case SHOW_PAGE:
         show_page();
@@ -214,17 +203,17 @@ static void display_process(void)
  * @brief show_str
  *
  */
-static void show_str(char *text)
+static void show_str(void)
 {
     cfb_framebuffer_clear(display_handler.display, true);
 
-    size_t len = strlen(text);
+    size_t len = strlen(display_handler.dis_str);
 
     uint16_t text_width = len * display_handler.font_width;
     uint16_t x = (display_handler.capabilities.x_resolution - text_width) / 2;
     uint16_t y = 40;
 
-    cfb_print(display_handler.display, text, x, y);
+    cfb_print(display_handler.display, display_handler.dis_str, x, y);
 
     // Display update
     cfb_framebuffer_finalize(display_handler.display);
@@ -239,25 +228,63 @@ static void show_page(void)
     struct cfb_position p1 = { .x = 3, .y = 16 };
     struct cfb_position p2 = { .x = 7, .y = 19 };
 
+    if(display_handler.page.par_select == 0)
+    {
+        p1.x = 3;
+        p1.y = 16;
+        p2.x = 7;
+        p2.y = 19;
+    }
+    else if(display_handler.page.par_select == 1)
+    {
+        p1.x = 3;
+        p1.y = 25;
+        p2.x = 7;
+        p2.y = 28;
+    }
+    else if(display_handler.page.par_select == 2)
+    {
+        p1.x = 67;
+        p1.y = 16;
+        p2.x = 71;
+        p2.y = 19;
+    }
+    else
+    {
+        p1.x = 67;
+        p1.y = 25;
+        p2.x = 71;
+        p2.y = 28;
+    }
+
     cfb_framebuffer_clear(display_handler.display, true);
 
     cfb_framebuffer_set_font(display_handler.display, 0);
-    cfb_print(display_handler.display, display_handler.page.title, 0, 0);
+    cfb_print(display_handler.display, display_handler.page.title, 40, 0);
     cfb_framebuffer_finalize(display_handler.display);
 
     cfb_framebuffer_set_font(display_handler.display, my_font_idx);
 
     cfb_draw_rect(display_handler.display, &p1, &p2);
 
+    if(display_handler.page.EnDis == 0)
+    {
+        cfb_print(display_handler.display, "OFF", 100, 3);
+    }
+    else
+    {
+        cfb_print(display_handler.display, "ON", 110, 3);
+    }
+
     cfb_print(display_handler.display, display_handler.page.par[0].title, 10, 15);
-    cfb_print(display_handler.display, display_handler.page.par[1].title, 10, 22);
+    cfb_print(display_handler.display, display_handler.page.par[1].title, 10, 24);
     cfb_print(display_handler.display, display_handler.page.par[2].title, 75, 15);
-    cfb_print(display_handler.display, display_handler.page.par[3].title, 75, 22);
+    cfb_print(display_handler.display, display_handler.page.par[3].title, 75, 24);
     
-    cfb_print(display_handler.display, display_handler.page.par[0].val, 40, 15);
-    cfb_print(display_handler.display, display_handler.page.par[1].val, 40, 22);
-    cfb_print(display_handler.display, display_handler.page.par[2].val, 105, 15);
-    cfb_print(display_handler.display, display_handler.page.par[3].val, 105, 22);
+    cfb_print(display_handler.display, display_handler.page.par[0].val, 45, 15);
+    cfb_print(display_handler.display, display_handler.page.par[1].val, 45, 24);
+    cfb_print(display_handler.display, display_handler.page.par[2].val, 110, 15);
+    cfb_print(display_handler.display, display_handler.page.par[3].val, 110, 24);
 
     cfb_framebuffer_finalize(display_handler.display);
 }

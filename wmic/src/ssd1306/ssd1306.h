@@ -23,13 +23,14 @@ typedef enum
 typedef struct 
 {
     char title[10];
-    char val[2];
+    char val[5];
 } page_data_par_t;
 
 typedef struct
 {
     char title[10];
-    page_data_par_t par[10]; 
+    uint8_t EnDis;
+    page_data_par_t par[4]; 
     uint8_t par_select;
 } display_pages_t;
 
@@ -41,4 +42,4 @@ void ssd1306_event_set(display_event_t event);
 display_state_t ssd1306_get_status(void);
 void ssd1306_pageToShow(display_pages_t page);
 
-#endif /* SSD1306_DRV_H */
+#endif // SSD1306_DRV_H

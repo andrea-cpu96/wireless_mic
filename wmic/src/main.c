@@ -32,6 +32,7 @@
 #include "ssd1306.h"
 #include "bt1036c_drv.h"
 #include "signals.h"
+#include "pages.h"
 #if (ENABLE_DSP_FILTER)
 #include "low_pass_filter.h"
 #endif // ENABLE_DSP_FILTER
@@ -428,35 +429,21 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
     if (pins == BIT(23))
     {
         right = 1;
-
-        // Show demo page
-        display_pages_t page;
-        strcpy(page.title, "DEMO");
-        strcpy(page.par[0].title, "PAR1");
-        strcpy(page.par[1].title, "PAR2");
-        strcpy(page.par[2].title, "PAR3");
-        strcpy(page.par[3].title, "PAR4");
-
-        strcpy(page.par[0].val, "0");
-        strcpy(page.par[1].val, "0");
-        strcpy(page.par[2].val, "0");
-        strcpy(page.par[3].val, "0");
-
-        page.par_select = 0; 
-        ssd1306_pageToShow(page);
-        ssd1306_event_set(SHOW_PAGE);
+        pages_demo_page(0, 0, 1, 2, 3, 4);
     }
     else if (pins == BIT(24))
     {
-        ssd1306_event_set(EV1);
         left = 1;
+        pages_demo_page(0, 1, 1, 2, 3, 4);
     }
     else if (pins == BIT(8))
     {
         set = 1;
+        pages_demo_page(0, 2, 1, 2, 3, 4);
     }
     else if (pins == BIT(9))
     {
+        pages_demo_page(1, 3, 1, 2, 3, 4);
     }
 
     // Reset the timer
