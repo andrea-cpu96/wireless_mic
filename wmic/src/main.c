@@ -69,7 +69,10 @@ const struct device *uart0_dev = DEVICE_DT_GET(DT_NODELABEL(uart0));
 // I2C data structures
 const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
-static void workq_1s(struct k_work *work);
+// Audio effects data structures
+static audio_effects_handler_t audio_effects_handler;
+
+static void workq_500ms(struct k_work *work);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
@@ -92,7 +95,7 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 
 static void display_stb(void);
 
-K_WORK_DELAYABLE_DEFINE(workq, workq_1s);
+K_WORK_DELAYABLE_DEFINE(workq, workq_500ms);
 
 int main(void)
 {
@@ -100,11 +103,6 @@ int main(void)
 #if (ENABLE_DSP_FILTER)
     dsp_filter_init();
 #endif // ENABLE_DSP_FILTER
-
-    // ADT init
-#if (ENABLE_DSP_ADT_EFFECT)
-    dsp_adt_init();
-#endif // ENABLE_DSP_ADT_EFFECT
 
     // GPIOS init
     if (gpios_init() != 0)
@@ -121,7 +119,6 @@ int main(void)
     }
 
     // Bluetooth init
-    /* 
     if (bt_init() != 0)
     {
         printk("Bluetooth init failed, resetting...\n");
@@ -134,7 +131,7 @@ int main(void)
         printk("Audio init failed, resetting...\n");
         sys_reboot(SYS_REBOOT_COLD);
     }
-*/
+
     k_sleep(K_MSEC(500));
 
     // App is running
@@ -151,14 +148,22 @@ int main(void)
 }
 
 /**
- * @brief workq_1s
+ * @brief workq_500ms
  * 
  * @param work 
  */
-static void workq_1s(struct k_work *work)
+static void workq_500ms(struct k_work *work)
 {
+    // ADT init
+#if (ENABLE_DSP_ADT_EFFECT)
+    if(audio_effects_handler.adt_set.EnDis > 0)
+    {
+        dsp_adt_init();
+    }
+#endif // ENABLE_DSP_ADT_EFFECT
+
     display_stb();
-    k_work_schedule(&workq, K_SECONDS(1)); 
+    k_work_schedule(&workq, K_MSEC(500)); 
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -217,7 +222,8 @@ static void dsp_filter(int32_t *pmem)
  */
 static void dsp_adt_init(void)
 {
-    adt_init(100);
+    uint16_t delay = (audio_effects_handler.adt_set.delay * 100); 
+    adt_init(delay);
 }
 
 /**
@@ -228,7 +234,7 @@ static void dsp_adt_init(void)
 static void dsp_adt(int32_t *sample)
 {
     adt_store_sample(sample[0]);
-    sample[1] = (adt_get_sample() >> 2);
+    sample[1] = (adt_get_sample() >> audio_effects_handler.adt_set.fading_lev);
 }
 #endif // ENABLE_DSP_ADT_EFFECT
 
@@ -429,21 +435,33 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
     if (pins == BIT(23))
     {
         right = 1;
-        pages_demo_page(0, 0, 1, 2, 3, 4);
+        audio_effects_handler.adt_set.EnDis = 0;
+        audio_effects_handler.adt_set.delay = 5;
+        audio_effects_handler.adt_set.fading_lev = 0; 
+        pages_adt_page(audio_effects_handler.adt_set, 0);
     }
     else if (pins == BIT(24))
     {
         left = 1;
-        pages_demo_page(0, 1, 1, 2, 3, 4);
+        audio_effects_handler.adt_set.EnDis = 0;
+        audio_effects_handler.adt_set.delay = 5;
+        audio_effects_handler.adt_set.fading_lev = 0; 
+        pages_adt_page(audio_effects_handler.adt_set, 1);
     }
     else if (pins == BIT(8))
     {
         set = 1;
-        pages_demo_page(0, 2, 1, 2, 3, 4);
+        audio_effects_handler.adt_set.EnDis = 0;
+        audio_effects_handler.adt_set.delay = 5;
+        audio_effects_handler.adt_set.fading_lev = 0; 
+        pages_adt_page(audio_effects_handler.adt_set, 2);
     }
     else if (pins == BIT(9))
     {
-        pages_demo_page(1, 3, 1, 2, 3, 4);
+        audio_effects_handler.adt_set.EnDis = 1;
+        audio_effects_handler.adt_set.delay = 5;
+        audio_effects_handler.adt_set.fading_lev = 0; 
+        pages_adt_page(audio_effects_handler.adt_set, 0);
     }
 
     // Reset the timer

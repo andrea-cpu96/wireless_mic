@@ -114,15 +114,15 @@ display_state_t ssd1306_get_status(void)
 
 /**
  * @brief ssd1306_pageToShow
- * 
- * @param page 
+ *
+ * @param page
  */
 void ssd1306_pageToShow(display_pages_t page)
 {
     strcpy(display_handler.page.title, page.title);
     display_handler.page.par_select = page.par_select;
     display_handler.page.EnDis = page.EnDis;
-    for(int i = 0 ; i < 4 ; i++)
+    for (int i = 0; i < 4; i++)
     {
         strcpy(display_handler.page.par[i].title, page.par[i].title);
         strcpy(display_handler.page.par[i].val, page.par[i].val);
@@ -225,36 +225,44 @@ static void show_str(void)
  */
 static void show_page(void)
 {
-    struct cfb_position p1 = { .x = 3, .y = 16 };
-    struct cfb_position p2 = { .x = 7, .y = 19 };
+    struct cfb_position p1 = {.x = 3, .y = 16};
+    struct cfb_position p2 = {.x = 7, .y = 19};
 
-    if(display_handler.page.par_select == 0)
+    if (display_handler.page.par_select == 1)
     {
         p1.x = 3;
         p1.y = 16;
         p2.x = 7;
         p2.y = 19;
     }
-    else if(display_handler.page.par_select == 1)
+    else if (display_handler.page.par_select == 2)
     {
         p1.x = 3;
         p1.y = 25;
         p2.x = 7;
         p2.y = 28;
     }
-    else if(display_handler.page.par_select == 2)
+    else if (display_handler.page.par_select == 3)
     {
         p1.x = 67;
         p1.y = 16;
         p2.x = 71;
         p2.y = 19;
+    }
+    else if (display_handler.page.par_select == 4)
+    {
+        p1.x = 67;
+        p1.y = 25;
+        p2.x = 71;
+        p2.y = 28;
     }
     else
     {
-        p1.x = 67;
-        p1.y = 25;
-        p2.x = 71;
-        p2.y = 28;
+        // Title
+        p1.x = 34;
+        p1.y = 5;
+        p2.x = 38;
+        p2.y = 9;
     }
 
     cfb_framebuffer_clear(display_handler.display, true);
@@ -267,7 +275,7 @@ static void show_page(void)
 
     cfb_draw_rect(display_handler.display, &p1, &p2);
 
-    if(display_handler.page.EnDis == 0)
+    if (display_handler.page.EnDis == 0)
     {
         cfb_print(display_handler.display, "OFF", 100, 3);
     }
@@ -280,7 +288,7 @@ static void show_page(void)
     cfb_print(display_handler.display, display_handler.page.par[1].title, 10, 24);
     cfb_print(display_handler.display, display_handler.page.par[2].title, 75, 15);
     cfb_print(display_handler.display, display_handler.page.par[3].title, 75, 24);
-    
+
     cfb_print(display_handler.display, display_handler.page.par[0].val, 45, 15);
     cfb_print(display_handler.display, display_handler.page.par[1].val, 45, 24);
     cfb_print(display_handler.display, display_handler.page.par[2].val, 110, 15);

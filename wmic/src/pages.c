@@ -7,8 +7,8 @@
 
 /**
  * @brief pages_demo_page
- * 
- * @param idx 
+ *
+ * @param idx
  */
 void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
 {
@@ -28,7 +28,36 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
         snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", v3);
         snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", v4);
 
-        page.par_select = idx; 
+        page.par_select = idx;
+        ssd1306_pageToShow(page);
+        ssd1306_event_set(SHOW_PAGE);
+}
+
+/**
+ * @brief pages_adt_page
+ * 
+ * @param adt_set 
+ * @param idx 
+ */
+void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
+{
+        display_pages_t page;
+
+        strcpy(page.title, "ADT");
+
+        page.EnDis = adt_set.EnDis;
+
+        strcpy(page.par[0].title, "DEL");
+        strcpy(page.par[1].title, "AMP");
+        strcpy(page.par[2].title, "");
+        strcpy(page.par[3].title, "");
+
+        snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", adt_set.delay);
+        snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", adt_set.fading_lev);
+        snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
+        snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+
+        page.par_select = idx;
         ssd1306_pageToShow(page);
         ssd1306_event_set(SHOW_PAGE);
 }
