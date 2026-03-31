@@ -1,9 +1,11 @@
 #include "ssd1306.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
-#include <zephyr/sys/printk.h>
 #include <zephyr/display/cfb.h>
+#include <zephyr/sys/printk.h>
 
 #include <stdio.h>
 

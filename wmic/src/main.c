@@ -1,19 +1,19 @@
 /*
-*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣶⣶⣦⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀⠀
-*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣷⣤⠀⠈⠙⢿⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀
-*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣿⣿⣿⠆⠰⠶⠀⠘⢿⣿⣿⣿⣿⣿⣆⠀⠀⠀
-*⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⠏⠀⢀⣠⣤⣤⣀⠙⣿⣿⣿⣿⣿⣷⡀⠀
-*⠀⠀⠀⠀⠀⠀⠀⠀⢠⠋⢈⣉⠉⣡⣤⢰⣿⣿⣿⣿⣿⣷⡈⢿⣿⣿⣿⣿⣷⡀
-*⠀⠀⠀⠀⠀⠀⠀⡴⢡⣾⣿⣿⣷⠋⠁⣿⣿⣿⣿⣿⣿⣿⠃⠀⡻⣿⣿⣿⣿⡇
-*⠀⠀⠀⠀⠀⢀⠜⠁⠸⣿⣿⣿⠟⠀⠀⠘⠿⣿⣿⣿⡿⠋⠰⠖⠱⣽⠟⠋⠉⡇
-*⠀⠀⠀⠀⡰⠉⠖⣀⠀⠀⢁⣀⠀⣴⣶⣦⠀⢴⡆⠀⠀⢀⣀⣀⣉⡽⠷⠶⠋⠀
-*⠀⠀⠀⡰⢡⣾⣿⣿⣿⡄⠛⠋⠘⣿⣿⡿⠀⠀⣐⣲⣤⣯⠞⠉⠁⠀⠀⠀⠀⠀
-*⠀⢀⠔⠁⣿⣿⣿⣿⣿⡟⠀⠀⠀⢀⣄⣀⡞⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀
-*⠀⡜⠀⠀⠻⣿⣿⠿⣻⣥⣀⡀⢠⡟⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-*⢰⠁⠀⡤⠖⠺⢶⡾⠃⠀⠈⠙⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-*⠈⠓⠾⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-*/
+ *⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣶⣶⣦⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+ *⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀⠀
+ *⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣷⣤⠀⠈⠙⢿⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀
+ *⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣿⣿⣿⠆⠰⠶⠀⠘⢿⣿⣿⣿⣿⣿⣆⠀⠀⠀
+ *⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⠏⠀⢀⣠⣤⣤⣀⠙⣿⣿⣿⣿⣿⣷⡀⠀
+ *⠀⠀⠀⠀⠀⠀⠀⠀⢠⠋⢈⣉⠉⣡⣤⢰⣿⣿⣿⣿⣿⣷⡈⢿⣿⣿⣿⣿⣷⡀
+ *⠀⠀⠀⠀⠀⠀⠀⡴⢡⣾⣿⣿⣷⠋⠁⣿⣿⣿⣿⣿⣿⣿⠃⠀⡻⣿⣿⣿⣿⡇
+ *⠀⠀⠀⠀⠀⢀⠜⠁⠸⣿⣿⣿⠟⠀⠀⠘⠿⣿⣿⣿⡿⠋⠰⠖⠱⣽⠟⠋⠉⡇
+ *⠀⠀⠀⠀⡰⠉⠖⣀⠀⠀⢁⣀⠀⣴⣶⣦⠀⢴⡆⠀⠀⢀⣀⣀⣉⡽⠷⠶⠋⠀
+ *⠀⠀⠀⡰⢡⣾⣿⣿⣿⡄⠛⠋⠘⣿⣿⡿⠀⠀⣐⣲⣤⣯⠞⠉⠁⠀⠀⠀⠀⠀
+ *⠀⢀⠔⠁⣿⣿⣿⣿⣿⡟⠀⠀⠀⢀⣄⣀⡞⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀
+ *⠀⡜⠀⠀⠻⣿⣿⠿⣻⣥⣀⡀⢠⡟⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+ *⢰⠁⠀⡤⠖⠺⢶⡾⠃⠀⠈⠙⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+ *⠈⠓⠾⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+ */
 
 #include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
@@ -30,6 +30,7 @@
 #include "config.h"
 #include "audio.h"
 #include "ssd1306.h"
+#include "pcf8574.h"
 #include "bt1036c_drv.h"
 #include "signals.h"
 #include "pages.h"
@@ -85,7 +86,7 @@ static void dsp_adt(int32_t *sample);
 static void dsp_amplifier(int32_t *sample);
 
 static int gpios_init(void);
-static int display_init(void);
+static int display_and_keypad(void);
 static int bt_init(void);
 static int audio_init(void);
 
@@ -112,9 +113,9 @@ int main(void)
     }
 
     // display init
-    if (display_init() != 0)
+    if (display_and_keypad() != 0)
     {
-        printk("Display init failed, resetting...\n");
+        printk("Display and keypad init failed, resetting...\n");
         sys_reboot(SYS_REBOOT_COLD);
     }
 
@@ -149,21 +150,21 @@ int main(void)
 
 /**
  * @brief workq_500ms
- * 
- * @param work 
+ *
+ * @param work
  */
 static void workq_500ms(struct k_work *work)
 {
     // ADT init
 #if (ENABLE_DSP_ADT_EFFECT)
-    if(audio_effects_handler.adt_set.EnDis > 0)
+    if (audio_effects_handler.adt_set.EnDis > 0)
     {
         dsp_adt_init();
     }
 #endif // ENABLE_DSP_ADT_EFFECT
 
     display_stb();
-    k_work_schedule(&workq, K_MSEC(500)); 
+    k_work_schedule(&workq, K_MSEC(500));
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -222,7 +223,7 @@ static void dsp_filter(int32_t *pmem)
  */
 static void dsp_adt_init(void)
 {
-    uint16_t delay = (audio_effects_handler.adt_set.delay * 100); 
+    uint16_t delay = (audio_effects_handler.adt_set.delay * 100);
     adt_init(delay);
 }
 
@@ -295,11 +296,11 @@ static int gpios_init(void)
 }
 
 /**
- * @brief display_init
+ * @brief display_and_keypad
  *
  * @return int
  */
-static int display_init(void)
+static int display_and_keypad(void)
 {
     // Check device is ready
     if (!device_is_ready(i2c1_dev))
@@ -308,7 +309,12 @@ static int display_init(void)
         return -1;
     }
 
-    return ssd1306_config();
+    if ((ssd1306_config() < 0) || (pcf8574_config() < 0))
+    {
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -437,7 +443,7 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
         right = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0; 
+        audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 0);
     }
     else if (pins == BIT(24))
@@ -445,7 +451,7 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
         left = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0; 
+        audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 1);
     }
     else if (pins == BIT(8))
@@ -453,14 +459,14 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
         set = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0; 
+        audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 2);
     }
     else if (pins == BIT(9))
     {
         audio_effects_handler.adt_set.EnDis = 1;
         audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0; 
+        audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 0);
     }
 
@@ -470,12 +476,12 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
 
 /**
  * @brief idle_hook
- * 
+ *
  */
 static void display_stb(void)
 {
     // Turn off the display after 10s of inactivity
-    if(ssd1306_get_status() != DISPLAY_OFF)
+    if (ssd1306_get_status() != DISPLAY_OFF)
     {
         if ((k_uptime_get() - display_stb_timer) > DISPLAY_STB_TIME_MS)
         {

@@ -1,7 +1,7 @@
 #ifndef SSD1306_DRV_H
 #define SSD1306_DRV_H
 
-#include <zephyr/device.h>
+#include <stdint.h>
 
 typedef enum
 {
