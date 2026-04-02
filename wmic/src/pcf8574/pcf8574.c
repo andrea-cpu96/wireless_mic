@@ -6,10 +6,12 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/sys/printk.h>
 
+#define KEYPAD_BTN_NUM 8
+
 struct keypad_handler_t
 {
     const struct device *pcf;
-    uint8_t pin[8];
+    uint8_t buttons_state;
 } static keypad_handler;
 
 int pcf8574_config(void)
@@ -18,16 +20,25 @@ int pcf8574_config(void)
 
     if (!device_is_ready(keypad_handler.pcf))
     {
-        printk("PCF8574 non pronto!\n");
+        printk("PCF8574 not ready\n");
         return -1;
     }
 
-    gpio_pin_configure(keypad_handler.pcf, 0, GPIO_INPUT | GPIO_PULL_UP);
+    for (int i = 0; i < KEYPAD_BTN_NUM; i++)
+    {
+        gpio_pin_configure(keypad_handler.pcf, i, GPIO_INPUT | GPIO_PULL_UP);
+    }
 
     return 0;
 }
 
 uint8_t pcf8574_read(void)
 {
-    return gpio_pin_get(keypad_handler.pcf, 0);
+    keypad_handler.buttons_state = 0;
+
+    for (int i = 0; i < KEYPAD_BTN_NUM; i++)
+    {
+        keypad_handler.buttons_state |= (!gpio_pin_get(keypad_handler.pcf, i) << i);
+    }
+    return keypad_handler.buttons_state;
 }

@@ -3,28 +3,28 @@
 		zephyr,display = &ssd1306;
 	};
 
-    buttons {
+    inputs {
         compatible = "gpio-keys";
-        label = "User Buttons";
+        label = "User Inputs";
 
-        button1: button_1 {
+        input1: input_1 {
             gpios = <&gpio0 23 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-            label = "Button 1";
+            label = "Input 1";
         };
 
-        button2: button_2 {
+        input2: input_2 {
             gpios = <&gpio0 24 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-            label = "Button 2";
+            label = "Input 2";
         };
 
-        button3: button_3 {
+        input3: input_3 {
             gpios = <&gpio0 8 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-            label = "Button 3";
+            label = "Input 3";
         };
 
-        button4: button_4 {
+        input4: input_4 {
             gpios = <&gpio0 9 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-            label = "Button 4";
+            label = "Input 4";
         };
     };
 };

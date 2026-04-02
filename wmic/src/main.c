@@ -41,7 +41,7 @@
 #include "adt.h"
 #endif // ENABLE_DSP_ADT_EFFECT
 
-#define USER_BUTTONS_N 4
+#define INPUTS_N 4
 
 const float max = MAX_LIMIT;
 const float min = MIN_LIMIT;
@@ -49,12 +49,12 @@ const float min = MIN_LIMIT;
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
-// User buttons data structures
-const struct gpio_dt_spec ubtn[USER_BUTTONS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(button1), gpios),
-                                                  GPIO_DT_SPEC_GET(DT_NODELABEL(button2), gpios),
-                                                  GPIO_DT_SPEC_GET(DT_NODELABEL(button3), gpios),
-                                                  GPIO_DT_SPEC_GET(DT_NODELABEL(button4), gpios)};
-static struct gpio_callback buttons_cb;
+// Inputs data structures
+const struct gpio_dt_spec inputs[INPUTS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(input1), gpios),
+                                              GPIO_DT_SPEC_GET(DT_NODELABEL(input2), gpios),
+                                              GPIO_DT_SPEC_GET(DT_NODELABEL(input3), gpios),
+                                              GPIO_DT_SPEC_GET(DT_NODELABEL(input4), gpios)};
+static struct gpio_callback inputs_cb;
 uint8_t right;
 uint8_t left;
 uint8_t set;
@@ -90,7 +90,7 @@ static int display_and_keypad(void);
 static int bt_init(void);
 static int audio_init(void);
 
-static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
+static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
 static void data_elab(int32_t *pmem, uint32_t block_size);
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size);
 
@@ -267,7 +267,7 @@ static void dsp_amplifier(int32_t *sample)
  */
 static int gpios_init(void)
 {
-    int ubtn_bit = 0;
+    int inputs_bit = 0;
 
     // Signaling LED
     if (!gpio_is_ready_dt(&led))
@@ -276,21 +276,21 @@ static int gpios_init(void)
     }
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
 
-    // User buttons
-    for (int i = 0; i < USER_BUTTONS_N; i++)
+    // Inputs
+    for (int i = 0; i < INPUTS_N; i++)
     {
-        ubtn_bit |= BIT(ubtn[i].pin);
+        inputs_bit |= BIT(inputs[i].pin);
 
-        if (!gpio_is_ready_dt(&ubtn[i]))
+        if (!gpio_is_ready_dt(&inputs[i]))
         {
             return -1;
         }
-        gpio_pin_configure_dt(&ubtn[i], GPIO_INPUT);
-        gpio_pin_interrupt_configure_dt(&ubtn[i], GPIO_INT_EDGE_TO_ACTIVE);
+        gpio_pin_configure_dt(&inputs[i], GPIO_INPUT);
+        gpio_pin_interrupt_configure_dt(&inputs[i], GPIO_INT_EDGE_TO_ACTIVE);
     }
 
-    gpio_init_callback(&buttons_cb, buttons_handler_cb, ubtn_bit);
-    gpio_add_callback(ubtn[0].port, &buttons_cb);
+    gpio_init_callback(&inputs_cb, inputs_handler_cb, inputs_bit);
+    gpio_add_callback(inputs[0].port, &inputs_cb);
 
     return 0;
 }
@@ -426,19 +426,20 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 }
 
 /**
- * @brief buttons_handler_cb
+ * @brief inputs_handler_cb
  *
  * @param dev
  * @param cb
  * @param pins
  */
-static void buttons_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+    uint8_t inputs_state = pcf8574_read();
     right = 0;
     left = 0;
     set = 0;
 
-    if (pins == BIT(23))
+    if (inputs_state & (1 << 0))
     {
         right = 1;
         audio_effects_handler.adt_set.EnDis = 0;
@@ -446,7 +447,7 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 0);
     }
-    else if (pins == BIT(24))
+    else if (inputs_state & (1 << 1))
     {
         left = 1;
         audio_effects_handler.adt_set.EnDis = 0;
@@ -454,7 +455,7 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 1);
     }
-    else if (pins == BIT(8))
+    else if (inputs_state & (1 << 2))
     {
         set = 1;
         audio_effects_handler.adt_set.EnDis = 0;
@@ -462,7 +463,7 @@ static void buttons_handler_cb(const struct device *dev, struct gpio_callback *c
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 2);
     }
-    else if (pins == BIT(9))
+    else if (inputs_state & (1 << 3))
     {
         audio_effects_handler.adt_set.EnDis = 1;
         audio_effects_handler.adt_set.delay = 5;
