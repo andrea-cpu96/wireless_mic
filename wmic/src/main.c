@@ -41,20 +41,21 @@
 #include "adt.h"
 #endif // ENABLE_DSP_ADT_EFFECT
 
-#define INPUTS_N 4
-
 const float max = MAX_LIMIT;
 const float min = MIN_LIMIT;
 
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
+#if (ENABLE_INPUTS_INT)
+#define INPUTS_N 4
 // Inputs data structures
 const struct gpio_dt_spec inputs[INPUTS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(input1), gpios),
                                               GPIO_DT_SPEC_GET(DT_NODELABEL(input2), gpios),
                                               GPIO_DT_SPEC_GET(DT_NODELABEL(input3), gpios),
                                               GPIO_DT_SPEC_GET(DT_NODELABEL(input4), gpios)};
 static struct gpio_callback inputs_cb;
+#endif // ENABLE_INPUTS_INT
 uint8_t right;
 uint8_t left;
 uint8_t set;
@@ -73,7 +74,7 @@ const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 // Audio effects data structures
 static audio_effects_handler_t audio_effects_handler;
 
-static void workq_500ms(struct k_work *work);
+static void workq_100ms(struct k_work *work);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
@@ -90,13 +91,13 @@ static int display_and_keypad(void);
 static int bt_init(void);
 static int audio_init(void);
 
-static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
+static void inputs_handler_cb(void);
 static void data_elab(int32_t *pmem, uint32_t block_size);
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size);
 
 static void display_stb(void);
 
-K_WORK_DELAYABLE_DEFINE(workq, workq_500ms);
+K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 
 int main(void)
 {
@@ -149,11 +150,11 @@ int main(void)
 }
 
 /**
- * @brief workq_500ms
+ * @brief workq_100ms
  *
  * @param work
  */
-static void workq_500ms(struct k_work *work)
+static void workq_100ms(struct k_work *work)
 {
     // ADT init
 #if (ENABLE_DSP_ADT_EFFECT)
@@ -163,8 +164,9 @@ static void workq_500ms(struct k_work *work)
     }
 #endif // ENABLE_DSP_ADT_EFFECT
 
+    inputs_handler_cb();
     display_stb();
-    k_work_schedule(&workq, K_MSEC(500));
+    k_work_schedule(&workq, K_MSEC(100));
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -267,8 +269,6 @@ static void dsp_amplifier(int32_t *sample)
  */
 static int gpios_init(void)
 {
-    int inputs_bit = 0;
-
     // Signaling LED
     if (!gpio_is_ready_dt(&led))
     {
@@ -276,6 +276,8 @@ static int gpios_init(void)
     }
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
 
+#if (ENABLE_INPUTS_INT)
+    int inputs_bit = 0;
     // Inputs
     for (int i = 0; i < INPUTS_N; i++)
     {
@@ -291,6 +293,7 @@ static int gpios_init(void)
 
     gpio_init_callback(&inputs_cb, inputs_handler_cb, inputs_bit);
     gpio_add_callback(inputs[0].port, &inputs_cb);
+#endif // ENABLE_INPUTS_INT
 
     return 0;
 }
@@ -428,11 +431,8 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 /**
  * @brief inputs_handler_cb
  *
- * @param dev
- * @param cb
- * @param pins
  */
-static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+static void inputs_handler_cb(void)
 {
     uint8_t inputs_state = pcf8574_read();
     right = 0;
@@ -446,6 +446,8 @@ static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb
         audio_effects_handler.adt_set.delay = 5;
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 0);
+        // Reset the timer
+        display_stb_timer = k_uptime_get();
     }
     else if (inputs_state & (1 << 1))
     {
@@ -454,6 +456,8 @@ static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb
         audio_effects_handler.adt_set.delay = 5;
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 1);
+        // Reset the timer
+        display_stb_timer = k_uptime_get();
     }
     else if (inputs_state & (1 << 2))
     {
@@ -462,6 +466,8 @@ static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb
         audio_effects_handler.adt_set.delay = 5;
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 2);
+        // Reset the timer
+        display_stb_timer = k_uptime_get();
     }
     else if (inputs_state & (1 << 3))
     {
@@ -469,10 +475,9 @@ static void inputs_handler_cb(const struct device *dev, struct gpio_callback *cb
         audio_effects_handler.adt_set.delay = 5;
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 0);
+        // Reset the timer
+        display_stb_timer = k_uptime_get();
     }
-
-    // Reset the timer
-    display_stb_timer = k_uptime_get();
 }
 
 /**
