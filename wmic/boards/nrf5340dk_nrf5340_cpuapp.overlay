@@ -94,9 +94,17 @@
         com-sequential;
     };
 
-	pcf8574: pcf8574@27 {
+	pcf8574_btn_b1: pcf8574@27 {
 		compatible = "nxp,pcf857x";
 		reg = <0x27>;
+		gpio-controller;
+		ngpios = <8>;
+		#gpio-cells = <2>;
+	};
+
+	pcf8574_led_b1: pcf8574@20 {
+		compatible = "nxp,pcf857x";
+		reg = <0x20>;
 		gpio-controller;
 		ngpios = <8>;
 		#gpio-cells = <2>;

@@ -444,7 +444,7 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
  */
 static void inputs_handler_cb(void)
 {
-    uint8_t inputs_state = pcf8574_btn_read();
+    enum buttons_e inputs_state = pcf8574_btn_read();
     right = 0;
     left = 0;
     set = 0;
@@ -452,7 +452,7 @@ static void inputs_handler_cb(void)
     switch (inputs_state)
     {
     case BUTTON_1:
-        gpio_pin_set(led.port, led.pin, 1);
+        pcf8574_led_set(LED_1);
         right = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -488,7 +488,7 @@ static void inputs_handler_cb(void)
         display_stb_timer = k_uptime_get();
         break;
     default:
-        gpio_pin_set(led.port, led.pin, 0);
+        pcf8574_led_clear(255);
         break;
     }
 }
