@@ -97,6 +97,8 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 
 static void display_stb(void);
 
+static void system_fault_handler(void);
+
 K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 
 int main(void)
@@ -110,36 +112,35 @@ int main(void)
     if (gpios_init() != 0)
     {
         printk("GPIO init failed, resetting...\n");
-        sys_reboot(SYS_REBOOT_COLD);
+        system_fault_handler();
     }
 
     // display init
     if (display_and_keypad() != 0)
     {
         printk("Display and keypad init failed, resetting...\n");
-        sys_reboot(SYS_REBOOT_COLD);
+        system_fault_handler();
     }
-
+#if (!DEBUG_MODE)
     // Bluetooth init
     if (bt_init() != 0)
     {
         printk("Bluetooth init failed, resetting...\n");
-        sys_reboot(SYS_REBOOT_COLD);
     }
 
     // Audio init
     if (audio_init() != 0)
     {
         printk("Audio init failed, resetting...\n");
-        sys_reboot(SYS_REBOOT_COLD);
+        system_fault_handler();
     }
-
+#endif //DEBUG_MODE
     k_sleep(K_MSEC(500));
 
     // App is running
     gpio_pin_set(led.port, led.pin, 1);
 
-    // Schedule 1s work queue
+    // Schedule 100ms work queue
     k_work_schedule(&workq, K_SECONDS(1));
 
     while (1)
@@ -164,7 +165,10 @@ static void workq_100ms(struct k_work *work)
     }
 #endif // ENABLE_DSP_ADT_EFFECT
 
+#if (!ENABLE_INPUTS_INT)
     inputs_handler_cb();
+#endif // ENABLE_INPUTS_INT
+
     display_stb();
     k_work_schedule(&workq, K_MSEC(100));
 }
@@ -312,11 +316,17 @@ static int display_and_keypad(void)
         return -1;
     }
 
+#if (DEBUG_MODE)
+    if (pcf8574_config() < 0)
+    {
+        return -1;
+    }
+#else
     if ((ssd1306_config() < 0) || (pcf8574_config() < 0))
     {
         return -1;
     }
-
+#endif // DEBUG_MODE
     return 0;
 }
 
@@ -434,13 +444,15 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
  */
 static void inputs_handler_cb(void)
 {
-    uint8_t inputs_state = pcf8574_read();
+    uint8_t inputs_state = pcf8574_btn_read();
     right = 0;
     left = 0;
     set = 0;
 
-    if (inputs_state & (1 << 0))
+    switch (inputs_state)
     {
+    case BUTTON_1:
+        gpio_pin_set(led.port, led.pin, 1);
         right = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -448,9 +460,8 @@ static void inputs_handler_cb(void)
         pages_adt_page(audio_effects_handler.adt_set, 0);
         // Reset the timer
         display_stb_timer = k_uptime_get();
-    }
-    else if (inputs_state & (1 << 1))
-    {
+        break;
+    case BUTTON_2:
         left = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -458,9 +469,8 @@ static void inputs_handler_cb(void)
         pages_adt_page(audio_effects_handler.adt_set, 1);
         // Reset the timer
         display_stb_timer = k_uptime_get();
-    }
-    else if (inputs_state & (1 << 2))
-    {
+        break;
+    case BUTTON_3:
         set = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -468,15 +478,18 @@ static void inputs_handler_cb(void)
         pages_adt_page(audio_effects_handler.adt_set, 2);
         // Reset the timer
         display_stb_timer = k_uptime_get();
-    }
-    else if (inputs_state & (1 << 3))
-    {
+        break;
+    case BUTTON_4:
         audio_effects_handler.adt_set.EnDis = 1;
         audio_effects_handler.adt_set.delay = 5;
         audio_effects_handler.adt_set.fading_lev = 0;
         pages_adt_page(audio_effects_handler.adt_set, 0);
         // Reset the timer
         display_stb_timer = k_uptime_get();
+        break;
+    default:
+        gpio_pin_set(led.port, led.pin, 0);
+        break;
     }
 }
 
@@ -498,4 +511,14 @@ static void display_stb(void)
     {
         // Do nothing
     }
+}
+
+/**
+ * @brief system_fault_handler
+ *
+ */
+static void system_fault_handler(void)
+{
+    k_sleep(K_MSEC(500));
+    sys_reboot(SYS_REBOOT_COLD);
 }
