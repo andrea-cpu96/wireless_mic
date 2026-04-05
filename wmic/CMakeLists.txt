@@ -6,22 +6,22 @@ project(wmic)
 target_sources(app PRIVATE 
     src/main.c
     src/pages.c
-    src/audio/audio.c
+    src/audio_drv/audio_drv.c
     src/DSP/low_pass_filter.c
     src/DSP/adt.c
     src/DSP/signals.c
-    src/bt1036c/bt1036c_drv.c
-    src/ssd1306/ssd1306.c
-    src/pcf8574/pcf8574.c
+    src/bluetooth_drv/bluetooth_drv.c
+    src/display_drv/display_drv.c
+    src/keypad_drv/keypad_drv.c
 )
 
 zephyr_library_include_directories(
   src/
-  src/bt1036c/
+  src/bluetooth_drv/
   src/DSP/
-  src/audio/
-  src/ssd1306/
-  src/pcf8574/ 
+  src/audio_drv/
+  src/display_drv/
+  src/keypad_drv/ 
 )
 
 # Include the local CMSIS_DSP headers and compile only needed sources

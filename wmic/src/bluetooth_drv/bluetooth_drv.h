@@ -1,5 +1,5 @@
-#ifndef BT1036C_DRV_H
-#define BT1036C_DRV_H
+#ifndef BLUETOOTH_DRV_H
+#define BLUETOOTH_DRV_H
 
 #include <zephyr/device.h>
 #include <stddef.h>
@@ -16,7 +16,7 @@ struct bluetooth_peers
 
 typedef uint16_t (*bt1036c_peers_cb)(const struct bluetooth_peers *peers, const int16_t *size); // Callback function for peers setting
 
-int bt1036c_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t txrx_config);
-void bt1036c_at_send(const char *cmd);
+int bluetooth_drv_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t txrx_config);
+void bluetooth_drv_at_send(const char *cmd);
 
-#endif // BT1036C_DRV_H
+#endif // BLUETOOTH_DRV_H

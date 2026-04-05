@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "ssd1306.h"
+#include "display_drv.h"
 
 /**
  * @brief pages_demo_page
@@ -30,8 +30,8 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
         snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", v4);
 
         page.par_select = idx;
-        ssd1306_pageToShow(page);
-        ssd1306_event_set(SHOW_PAGE);
+        display_drv_pageToShow(page);
+        display_drv_event_set(SHOW_PAGE);
 }
 
 /**
@@ -59,6 +59,6 @@ void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
         snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
 
         page.par_select = idx;
-        ssd1306_pageToShow(page);
-        ssd1306_event_set(SHOW_PAGE);
+        display_drv_pageToShow(page);
+        display_drv_event_set(SHOW_PAGE);
 }

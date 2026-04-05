@@ -28,10 +28,10 @@
 #include <arm_math.h>
 
 #include "config.h"
-#include "audio.h"
-#include "ssd1306.h"
-#include "pcf8574.h"
-#include "bt1036c_drv.h"
+#include "audio_drv.h"
+#include "display_drv.h"
+#include "keypad_drv.h"
+#include "bluetooth_drv.h"
 #include "signals.h"
 #include "pages.h"
 #if (ENABLE_DSP_FILTER)
@@ -317,12 +317,12 @@ static int display_and_keypad(void)
     }
 
 #if (DEBUG_MODE)
-    if (pcf8574_config() < 0)
+    if (keypad_drv_config() < 0)
     {
         return -1;
     }
 #else
-    if ((ssd1306_config() < 0) || (pcf8574_config() < 0))
+    if ((display_drv_config() < 0) || (keypad_drv_config() < 0))
     {
         return -1;
     }
@@ -344,7 +344,7 @@ static int bt_init(void)
         return -1;
     }
 
-    return bt1036c_config(uart0_dev, bt_peer_select, TXRX_MODULE);
+    return bluetooth_drv_config(uart0_dev, bt_peer_select, TXRX_MODULE);
 }
 
 /**
@@ -361,7 +361,7 @@ static int audio_init(void)
         return -1;
     }
 
-    return audio_config(i2s_dev, data_elab);
+    return audio_drv_config(i2s_dev, data_elab);
 }
 
 /**
@@ -416,8 +416,8 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
         peers_n = *size;
 
         // Set a string to be shown onto the display
-        ssd1306_strToShow(peers[0].name);
-        ssd1306_event_set(SHOW_STRING);
+        display_drv_strToShow(peers[0].name);
+        display_drv_event_set(SHOW_STRING);
 
         k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
 
@@ -444,7 +444,7 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
  */
 static void inputs_handler_cb(void)
 {
-    enum buttons_e inputs_state = pcf8574_btn_read();
+    enum buttons_e inputs_state = keypad_drv_btn_read();
     right = 0;
     left = 0;
     set = 0;
@@ -452,7 +452,7 @@ static void inputs_handler_cb(void)
     switch (inputs_state)
     {
     case BUTTON_1:
-        pcf8574_led_set(LED_1);
+        keypad_drv_led_set(LED_1);
         right = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -488,7 +488,7 @@ static void inputs_handler_cb(void)
         display_stb_timer = k_uptime_get();
         break;
     default:
-        pcf8574_led_clear(255);
+        keypad_drv_led_clear(255);
         break;
     }
 }
@@ -500,11 +500,11 @@ static void inputs_handler_cb(void)
 static void display_stb(void)
 {
     // Turn off the display after 10s of inactivity
-    if (ssd1306_get_status() != DISPLAY_OFF)
+    if (display_drv_get_status() != DISPLAY_OFF)
     {
         if ((k_uptime_get() - display_stb_timer) > DISPLAY_STB_TIME_MS)
         {
-            ssd1306_turn_off();
+            display_drv_turn_off();
         }
     }
     else
