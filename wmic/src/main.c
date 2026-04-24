@@ -47,6 +47,14 @@ const float min = MIN_LIMIT;
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
+enum buttons_e
+{
+    BUTTON_NONE,
+    BUTTON_RIGHT,
+    BUTTON_LEFT,
+    BUTTON_SET,
+};
+
 #if (ENABLE_INPUTS_INT)
 #define INPUTS_N 4
 // Inputs data structures
@@ -56,9 +64,15 @@ const struct gpio_dt_spec inputs[INPUTS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(inpu
                                               GPIO_DT_SPEC_GET(DT_NODELABEL(input4), gpios)};
 static struct gpio_callback inputs_cb;
 #endif // ENABLE_INPUTS_INT
-uint8_t right;
-uint8_t left;
-uint8_t set;
+
+// Buttons state variables
+static enum buttons_e button_status = BUTTON_NONE;
+
+// Bluetooth peers data structures
+const struct bluetooth_peers *peers_p;
+static uint8_t peer_idex = 0;
+static uint8_t peers_n = 0;
+static bool peer_cb_exit = false;
 
 static int64_t display_stb_timer = 0;
 
@@ -92,6 +106,7 @@ static int bt_init(void);
 static int audio_init(void);
 
 static void inputs_handler_cb(void);
+static void page_handler(void);
 static void data_elab(int32_t *pmem, uint32_t block_size);
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size);
 
@@ -168,6 +183,9 @@ static void workq_100ms(struct k_work *work)
 #if (!ENABLE_INPUTS_INT)
     inputs_handler_cb();
 #endif // ENABLE_INPUTS_INT
+
+    // Pages handler
+    page_handler();
 
     display_stb();
     k_work_schedule(&workq, K_MSEC(100));
@@ -408,39 +426,28 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size)
 {
-    uint8_t peer_idex = 0;
-    uint8_t peers_n = 0;
+    uint8_t selected_peer;
+
+    peer_idex = 0;
+
+    pages_set_current_page(PEERS_PAGE);
+    peers_p = peers; // Store peers in a global variable to be used in the page handler and in the inputs handler callback
 
     // Set a string to be shown onto the display
-    display_drv_strToShow(peers[peer_idex].name);
+    display_drv_strToShow(peers_p[peer_idex].name);
     display_drv_event_set(SHOW_STRING);
 
-    while (set == 0)
+    while (peer_cb_exit == false)
     {
         k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
         peers_n = *size;      // Update the number of peers
-
-        if (right)
-        {
-            right = 0;
-            peer_idex = ((peer_idex + 1) % peers_n);
-            // Set a string to be shown onto the display
-            display_drv_strToShow(peers[peer_idex].name);
-            display_drv_event_set(SHOW_STRING);
-        }
-        else if (left)
-        {
-            left = 0;
-            peer_idex = (peer_idex == 0) ? (peers_n - 1) : (peer_idex - 1);
-            // Set a string to be shown onto the display
-            display_drv_strToShow(peers[peer_idex].name);
-            display_drv_event_set(SHOW_STRING);
-        }
     }
 
-    set = 0;
-
-    return peer_idex;
+    selected_peer = peer_idex;
+    peer_idex = 0;        // Reset the peer index
+    peers_n = 0;          // Reset the number of peers
+    peer_cb_exit = false; // Reset the peer callback exit flag
+    return selected_peer;
 }
 
 /**
@@ -450,45 +457,27 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 static void inputs_handler_cb(void)
 {
     enum buttons_e inputs_state = keypad_drv_btn_read();
-    right = 0;
-    left = 0;
-    set = 0;
+    button_status = BUTTON_NONE;
 
     switch (inputs_state)
     {
     case BUTTON_1:
         keypad_drv_led_set(LED_1);
-        right = 1;
-        audio_effects_handler.adt_set.EnDis = 0;
-        audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0;
-        pages_adt_page(audio_effects_handler.adt_set, 0);
+        button_status = BUTTON_RIGHT;
         // Reset the timer
         display_stb_timer = k_uptime_get();
         break;
     case BUTTON_2:
-        left = 1;
-        audio_effects_handler.adt_set.EnDis = 0;
-        audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0;
-        pages_adt_page(audio_effects_handler.adt_set, 1);
+        button_status = BUTTON_LEFT;
         // Reset the timer
         display_stb_timer = k_uptime_get();
         break;
     case BUTTON_3:
-        set = 1;
-        audio_effects_handler.adt_set.EnDis = 0;
-        audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0;
-        pages_adt_page(audio_effects_handler.adt_set, 2);
+        button_status = BUTTON_SET;
         // Reset the timer
         display_stb_timer = k_uptime_get();
         break;
     case BUTTON_4:
-        audio_effects_handler.adt_set.EnDis = 1;
-        audio_effects_handler.adt_set.delay = 5;
-        audio_effects_handler.adt_set.fading_lev = 0;
-        pages_adt_page(audio_effects_handler.adt_set, 0);
         // Reset the timer
         display_stb_timer = k_uptime_get();
         break;
@@ -499,22 +488,87 @@ static void inputs_handler_cb(void)
 }
 
 /**
+ * @brief page_handler
+ *
+ */
+static void page_handler(void)
+{
+    switch (pages_get_current_page())
+    {
+    case DEMO_PAGE:
+
+        break;
+    case PEERS_PAGE:
+        if (peers_n > 0)
+        {
+            if (button_status == BUTTON_RIGHT)
+            {
+                peer_idex = ((peer_idex + 1) % peers_n);
+                pages_peers_page(peers_p[peer_idex].name);
+            }
+            else if (button_status == BUTTON_LEFT)
+            {
+                peer_idex = (peer_idex == 0) ? (peers_n - 1) : (peer_idex - 1);
+                pages_peers_page(peers_p[peer_idex].name);
+            }
+            else if (button_status == BUTTON_SET)
+            {
+                pages_set_current_page(ADT_PAGE);
+                peer_cb_exit = true; // Exit the peer selection loop in the bluetooth driver
+            }
+        }
+        break;
+    case ADT_PAGE:
+
+        if (button_status == BUTTON_RIGHT)
+        {
+            audio_effects_handler.adt_set.EnDis = 0;
+            audio_effects_handler.adt_set.delay = 5;
+            audio_effects_handler.adt_set.fading_lev = 0;
+            pages_adt_page(audio_effects_handler.adt_set, 0);
+        }
+        else if (button_status == BUTTON_LEFT)
+        {
+            audio_effects_handler.adt_set.EnDis = 0;
+            audio_effects_handler.adt_set.delay = 5;
+            audio_effects_handler.adt_set.fading_lev = 0;
+            pages_adt_page(audio_effects_handler.adt_set, 1);
+        }
+        else if (button_status == BUTTON_SET)
+        {
+            audio_effects_handler.adt_set.EnDis = 0;
+            audio_effects_handler.adt_set.delay = 5;
+            audio_effects_handler.adt_set.fading_lev = 0;
+            pages_adt_page(audio_effects_handler.adt_set, 2);
+        }
+
+        break;
+    default:
+        break;
+    }
+}
+
+/**
  * @brief idle_hook
  *
  */
 static void display_stb(void)
 {
-    // Turn off the display after 10s of inactivity
-    if (display_drv_get_status() != DISPLAY_OFF)
+    if (pages_get_current_page() != PEERS_PAGE)
     {
-        if ((k_uptime_get() - display_stb_timer) > DISPLAY_STB_TIME_MS)
+
+        // Turn off the display after 10s of inactivity
+        if (display_drv_get_status() != DISPLAY_OFF)
         {
-            display_drv_turn_off();
+            if ((k_uptime_get() - display_stb_timer) > DISPLAY_STB_TIME_MS)
+            {
+                display_drv_turn_off();
+            }
         }
-    }
-    else
-    {
-        // Do nothing
+        else
+        {
+            // Do nothing
+        }
     }
 }
 
