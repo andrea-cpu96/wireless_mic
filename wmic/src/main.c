@@ -138,7 +138,7 @@ int main(void)
         printk("Audio init failed, resetting...\n");
         system_fault_handler();
     }
-#endif //DEBUG_MODE
+#endif // DEBUG_MODE
     k_sleep(K_MSEC(500));
 
     // App is running
@@ -406,28 +406,30 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
     uint8_t peer_idex = 0;
     uint8_t peers_n = 0;
 
-    display_drv_turn_on();
+    // Set a string to be shown onto the display
+    display_drv_strToShow(peers[peer_idex].name);
+    display_drv_event_set(SHOW_STRING);
 
     while (set == 0)
     {
-        display_stb_timer = k_uptime_get();
-        peers_n = *size;
-
-        // Set a string to be shown onto the display
-        display_drv_strToShow(peers[peer_idex].name);
-        display_drv_event_set(SHOW_STRING);
-
-        k_sleep(K_MSEC(500)); // Gives time to the bluetooth thread to check for other peers
+        k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
+        peers_n = *size;      // Update the number of peers
 
         if (right)
         {
             right = 0;
             peer_idex = ((peer_idex + 1) % peers_n);
+            // Set a string to be shown onto the display
+            display_drv_strToShow(peers[peer_idex].name);
+            display_drv_event_set(SHOW_STRING);
         }
         else if (left)
         {
             left = 0;
             peer_idex = (peer_idex == 0) ? (peers_n - 1) : (peer_idex - 1);
+            // Set a string to be shown onto the display
+            display_drv_strToShow(peers[peer_idex].name);
+            display_drv_event_set(SHOW_STRING);
         }
     }
 
