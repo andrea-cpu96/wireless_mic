@@ -6,6 +6,8 @@
 
 #include "display_drv.h"
 
+static enum pages_e current_page = PEERS_PAGE;
+
 /**
  * @brief pages_demo_page
  *
@@ -35,10 +37,21 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
 }
 
 /**
+ * @brief pages_peers_page
+ *
+ * @param peer_name
+ */
+void pages_peers_page(const char *peer_name)
+{
+        display_drv_strToShow(peer_name);
+        display_drv_event_set(SHOW_STRING);
+}
+
+/**
  * @brief pages_adt_page
- * 
- * @param adt_set 
- * @param idx 
+ *
+ * @param adt_set
+ * @param idx
  */
 void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
 {
@@ -61,4 +74,24 @@ void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
         page.par_select = idx;
         display_drv_pageToShow(page);
         display_drv_event_set(SHOW_PAGE);
+}
+
+/**
+ * @brief set_current_page
+ *
+ * @param page
+ */
+void pages_set_current_page(enum pages_e page)
+{
+        current_page = page;
+}
+
+/**
+ * @brief get_current_page
+ *
+ * @return enum pages_e
+ */
+enum pages_e pages_get_current_page(void)
+{
+        return current_page;
 }
