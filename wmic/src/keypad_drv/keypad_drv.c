@@ -51,7 +51,7 @@ int keypad_drv_config(void)
         return -1;
     }
 
-    gpio_port_set_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], 255);
+    gpio_port_clear_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], 255);
 
     return 0;
 }
@@ -75,7 +75,7 @@ enum buttons_e keypad_drv_btn_read(void)
 void keypad_drv_led_clear(uint8_t leds)
 {
     keypad_drv_handler.led_state &= ~leds;
-    gpio_port_set_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], leds);
+    gpio_port_clear_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], leds);
 }
 
 /**
@@ -86,7 +86,7 @@ void keypad_drv_led_clear(uint8_t leds)
 void keypad_drv_led_set(uint8_t leds)
 {
     keypad_drv_handler.led_state |= leds;
-    gpio_port_clear_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], leds);
+    gpio_port_set_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], leds);
 }
 
 /**

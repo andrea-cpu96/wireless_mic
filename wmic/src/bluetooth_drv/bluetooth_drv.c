@@ -127,17 +127,17 @@ int bluetooth_drv_config(const struct device *uart, bt1036c_peers_cb cb, const u
 
     bluetooth_drv_at_send("REBOOT"); // Reboot to make changes effective
     k_sleep(K_MSEC(1000));
-
+/*
     if (bluetooth_drv_handler.bluetooth_drv_status.name[0] == '\0')
     {
         printk("BT module not found on UART\n");
         return -1;
     }
-
+*/
     if (txrx_config != BT103036C_CONFIG_RX)
     {
         bluetooth_drv_at_send("SCAN=1"); // Scan advertised MAC addresses
-        k_sleep(K_MSEC(1000));
+        k_sleep(K_MSEC(10000));
 
         // Call calback for peer selction
         uint16_t peer_idx = cb(bluetooth_drv_handler.peer, &bluetooth_drv_handler.peer_num);

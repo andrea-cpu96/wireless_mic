@@ -33,7 +33,7 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
-  File.Open ("$(ProjectDir)/wmic/build/wmic/zephyr/zephyr.elf");
+  File.Open ("D:\Andrea\Embedded\repositories\wireless_mic\wmic\build_1\wmic\zephyr\zephyr.elf");
 }
 
 /*********************************************************************

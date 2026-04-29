@@ -121,6 +121,10 @@ int main(void)
         printk("Display and keypad init failed, resetting...\n");
         system_fault_handler();
     }
+        
+    // Schedule 100ms work queue
+    k_work_schedule(&workq, K_SECONDS(1));
+
 #if (!DEBUG_MODE)
     // Bluetooth init
     if (bt_init() != 0)
@@ -139,9 +143,6 @@ int main(void)
 
     // App is running
     gpio_pin_set(led.port, led.pin, 1);
-
-    // Schedule 100ms work queue
-    k_work_schedule(&workq, K_SECONDS(1));
 
     while (1)
     {
@@ -316,17 +317,11 @@ static int display_and_keypad(void)
         return -1;
     }
 
-#if (DEBUG_MODE)
-    if (keypad_drv_config() < 0)
-    {
-        return -1;
-    }
-#else
     if ((display_drv_config() < 0) || (keypad_drv_config() < 0))
     {
         return -1;
     }
-#endif // DEBUG_MODE
+
     return 0;
 }
 
@@ -411,15 +406,18 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
     uint8_t peer_idex = 0;
     uint8_t peers_n = 0;
 
+    display_drv_turn_on();
+
     while (set == 0)
     {
+        display_stb_timer = k_uptime_get();
         peers_n = *size;
 
         // Set a string to be shown onto the display
-        display_drv_strToShow(peers[0].name);
+        display_drv_strToShow(peers[peer_idex].name);
         display_drv_event_set(SHOW_STRING);
 
-        k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
+        k_sleep(K_MSEC(500)); // Gives time to the bluetooth thread to check for other peers
 
         if (right)
         {
@@ -444,15 +442,15 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
  */
 static void inputs_handler_cb(void)
 {
-    enum buttons_e inputs_state = keypad_drv_btn_read();
+    volatile enum buttons_e inputs_state = keypad_drv_btn_read();
     right = 0;
     left = 0;
     set = 0;
 
     switch (inputs_state)
     {
-    case BUTTON_1:
-        keypad_drv_led_set(LED_1);
+    case BUTTON_5:
+        keypad_drv_led_set(LED_6);
         right = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -461,7 +459,8 @@ static void inputs_handler_cb(void)
         // Reset the timer
         display_stb_timer = k_uptime_get();
         break;
-    case BUTTON_2:
+    case BUTTON_7:
+        keypad_drv_led_set(LED_8);
         left = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -470,7 +469,8 @@ static void inputs_handler_cb(void)
         // Reset the timer
         display_stb_timer = k_uptime_get();
         break;
-    case BUTTON_3:
+    case BUTTON_6:
+        keypad_drv_led_set(LED_1);
         set = 1;
         audio_effects_handler.adt_set.EnDis = 0;
         audio_effects_handler.adt_set.delay = 5;
@@ -480,6 +480,7 @@ static void inputs_handler_cb(void)
         display_stb_timer = k_uptime_get();
         break;
     case BUTTON_4:
+        keypad_drv_led_set(LED_7);
         audio_effects_handler.adt_set.EnDis = 1;
         audio_effects_handler.adt_set.delay = 5;
         audio_effects_handler.adt_set.fading_lev = 0;
