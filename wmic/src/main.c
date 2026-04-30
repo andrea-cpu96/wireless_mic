@@ -98,6 +98,7 @@ static void dsp_filter(int32_t *pmem);
 static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
 #endif // ENABLE_DSP_ADT_EFFECT
+static void dsp_tone_gen(void);
 static void dsp_amplifier(int32_t *sample);
 
 static int gpios_init(void);
@@ -286,6 +287,16 @@ static void dsp_amplifier(int32_t *sample)
 }
 
 /**
+ * @brief dsp_tone_gen
+ *
+ * @return int
+ */
+static int dsp_tone_gen(void)
+{
+    return 0;
+}
+
+/**
  * @brief gpios_init
  *
  * @return int
@@ -399,6 +410,12 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #else
     for (int i = 0; i < size - 1; i += 2)
     {
+        if(audio_effects_handler.tone_set.EnDis > 0)
+        {
+            &pmem[i] += dsp_tone_gen();
+            &pmem[i+1] -= &pmem[i];
+        }
+
         if ((pmem[i] <= max) && (pmem[i] >= min))
         {
             dsp_amplifier(&pmem[i]);
@@ -514,7 +531,6 @@ static void page_handler(void)
         }
         break;
     case ADT_PAGE:
-
         if (button_status == BUTTON_RIGHT)
         {
             audio_effects_handler.adt_set.EnDis = 0;
@@ -531,13 +547,28 @@ static void page_handler(void)
         }
         else if (button_status == BUTTON_SET)
         {
-            audio_effects_handler.adt_set.EnDis = 0;
-            audio_effects_handler.adt_set.delay = 5;
-            audio_effects_handler.adt_set.fading_lev = 0;
-            pages_adt_page(audio_effects_handler.adt_set, 2);
+            pages_set_current_page(TONE_GEN_PAGE);
         }
 
         break;
+    case TONE_GEN_PAGE:
+        if (button_status == BUTTON_RIGHT)
+        {
+        }
+        else if (button_status == BUTTON_LEFT)
+        {
+        }
+        else if (button_status == BUTTON_SET)
+        {
+           audio_effects_handler.tone_set.EnDis = 1;
+           audio_effects_handler.tone_set.tone = TONE_1KHZ;
+        }
+        else
+        {
+           audio_effects_handler.tone_set.EnDis = 0;
+           audio_effects_handler.tone_set.tone = TONE_NONE;
+        }
+         break;
     default:
         break;
     }
