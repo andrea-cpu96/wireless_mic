@@ -37,9 +37,7 @@
 #if (ENABLE_DSP_FILTER)
 #include "low_pass_filter.h"
 #endif // ENABLE_DSP_FILTER
-#if (ENABLE_DSP_ADT_EFFECT)
 #include "adt.h"
-#endif // ENABLE_DSP_ADT_EFFECT
 
 const float max = MAX_LIMIT;
 const float min = MIN_LIMIT;
@@ -47,7 +45,7 @@ const float min = MIN_LIMIT;
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
-enum buttons_e
+enum buttons_status_e
 {
     BUTTON_NONE,
     BUTTON_RIGHT,
@@ -55,18 +53,8 @@ enum buttons_e
     BUTTON_SET,
 };
 
-#if (ENABLE_INPUTS_INT)
-#define INPUTS_N 4
-// Inputs data structures
-const struct gpio_dt_spec inputs[INPUTS_N] = {GPIO_DT_SPEC_GET(DT_NODELABEL(input1), gpios),
-                                              GPIO_DT_SPEC_GET(DT_NODELABEL(input2), gpios),
-                                              GPIO_DT_SPEC_GET(DT_NODELABEL(input3), gpios),
-                                              GPIO_DT_SPEC_GET(DT_NODELABEL(input4), gpios)};
-static struct gpio_callback inputs_cb;
-#endif // ENABLE_INPUTS_INT
-
 // Buttons state variables
-static enum buttons_e button_status = BUTTON_NONE;
+static enum buttons_status_e button_status = BUTTON_NONE;
 
 // Bluetooth peers data structures
 const struct bluetooth_peers *peers_p;
@@ -94,11 +82,9 @@ static void workq_100ms(struct k_work *work);
 static void dsp_filter_init();
 static void dsp_filter(int32_t *pmem);
 #endif // ENABLE_DSP_FILTER
-#if (ENABLE_DSP_ADT_EFFECT)
 static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
-#endif // ENABLE_DSP_ADT_EFFECT
-static void dsp_tone_gen(void);
+static int dsp_tone_gen(void);
 static void dsp_amplifier(int32_t *sample);
 
 static int gpios_init(void);
@@ -175,16 +161,12 @@ int main(void)
 static void workq_100ms(struct k_work *work)
 {
     // ADT init
-#if (ENABLE_DSP_ADT_EFFECT)
     if (audio_effects_handler.adt_set.EnDis > 0)
     {
         dsp_adt_init();
     }
-#endif // ENABLE_DSP_ADT_EFFECT
 
-#if (!ENABLE_INPUTS_INT)
     inputs_handler_cb();
-#endif // ENABLE_INPUTS_INT
 
     // Pages handler
     page_handler();
@@ -242,7 +224,6 @@ static void dsp_filter(int32_t *pmem)
 }
 #endif // ENABLE_DSP_FILTER
 
-#if (ENABLE_DSP_ADT_EFFECT)
 /**
  * @brief dsp_adt_init
  *
@@ -263,7 +244,6 @@ static void dsp_adt(int32_t *sample)
     adt_store_sample(sample[0]);
     sample[1] = (adt_get_sample() >> audio_effects_handler.adt_set.fading_lev);
 }
-#endif // ENABLE_DSP_ADT_EFFECT
 
 /**
  * @brief dsp_amplifier
@@ -309,25 +289,6 @@ static int gpios_init(void)
         return -1;
     }
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
-
-#if (ENABLE_INPUTS_INT)
-    int inputs_bit = 0;
-    // Inputs
-    for (int i = 0; i < INPUTS_N; i++)
-    {
-        inputs_bit |= BIT(inputs[i].pin);
-
-        if (!gpio_is_ready_dt(&inputs[i]))
-        {
-            return -1;
-        }
-        gpio_pin_configure_dt(&inputs[i], GPIO_INPUT);
-        gpio_pin_interrupt_configure_dt(&inputs[i], GPIO_INT_EDGE_TO_ACTIVE);
-    }
-
-    gpio_init_callback(&inputs_cb, inputs_handler_cb, inputs_bit);
-    gpio_add_callback(inputs[0].port, &inputs_cb);
-#endif // ENABLE_INPUTS_INT
 
     return 0;
 }
@@ -412,8 +373,8 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     {
         if(audio_effects_handler.tone_set.EnDis > 0)
         {
-            &pmem[i] += dsp_tone_gen();
-            &pmem[i+1] -= &pmem[i];
+            pmem[i] = dsp_tone_gen();
+            pmem[i+1] = pmem[i];
         }
 
         if ((pmem[i] <= max) && (pmem[i] >= min))
@@ -429,9 +390,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #if (ENABLE_DSP_FILTER)
         dsp_filter(&pmem[i]);
 #endif // ENABLE_DSP_FILTER
-#if (ENABLE_DSP_ADT_EFFECT)
         dsp_adt(&pmem[i]);
-#endif
     }
 #endif // ENABLE_SIGNAL_GEN
 }

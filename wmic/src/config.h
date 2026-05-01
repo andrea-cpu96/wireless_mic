@@ -4,10 +4,8 @@
 
 #define TXRX_MODULE BT103036C_CONFIG_TX
 #define ENABLE_DSP_FILTER false
-#define ENABLE_DSP_ADT_EFFECT true
 #define ENABLE_STEREO_DIFF true
 #define ENABLE_SIGNAL_GEN false
-#define ENABLE_INPUTS_INT false
 
 // Display defines
 #define DISPLAY_STB_TIME_MS 10000
