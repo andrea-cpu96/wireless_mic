@@ -15,25 +15,25 @@ static enum pages_e current_page = PEERS_PAGE;
  */
 void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
 {
-        display_pages_t page;
+	display_pages_t page;
 
-        strcpy(page.title, "DEMO");
+	strcpy(page.title, "DEMO");
 
-        page.EnDis = EnDis;
+	page.EnDis = EnDis;
 
-        strcpy(page.par[0].title, "PAR1");
-        strcpy(page.par[1].title, "PAR2");
-        strcpy(page.par[2].title, "PAR3");
-        strcpy(page.par[3].title, "PAR4");
+	strcpy(page.par[0].title, "PAR1");
+	strcpy(page.par[1].title, "PAR2");
+	strcpy(page.par[2].title, "PAR3");
+	strcpy(page.par[3].title, "PAR4");
 
-        snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", v1);
-        snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", v2);
-        snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", v3);
-        snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", v4);
+	snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", v1);
+	snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", v2);
+	snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", v3);
+	snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", v4);
 
-        page.par_select = idx;
-        display_drv_pageToShow(page);
-        display_drv_event_set(SHOW_PAGE);
+	page.par_select = idx;
+	display_drv_pageToShow(page);
+	display_drv_event_set(SHOW_PAGE);
 }
 
 /**
@@ -43,8 +43,8 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
  */
 void pages_peers_page(const char *peer_name)
 {
-        display_drv_strToShow(peer_name);
-        display_drv_event_set(SHOW_STRING);
+	display_drv_strToShow(peer_name);
+	display_drv_event_set(SHOW_STRING);
 }
 
 /**
@@ -55,25 +55,25 @@ void pages_peers_page(const char *peer_name)
  */
 void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
 {
-        display_pages_t page;
+	display_pages_t page;
 
-        strcpy(page.title, "ADT");
+	strcpy(page.title, "ADT");
 
-        page.EnDis = adt_set.EnDis;
+	page.EnDis = adt_set.EnDis;
 
-        strcpy(page.par[0].title, "DEL");
-        strcpy(page.par[1].title, "AMP");
-        strcpy(page.par[2].title, "");
-        strcpy(page.par[3].title, "");
+	strcpy(page.par[0].title, "DEL;");
+	strcpy(page.par[1].title, "AMP;");
+	strcpy(page.par[2].title, "");
+	strcpy(page.par[3].title, "");
 
-        snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", adt_set.delay);
-        snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", adt_set.fading_lev);
-        snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
-        snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+	snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", adt_set.delay);
+	snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", adt_set.fading_lev);
+	snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
+	snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
 
-        page.par_select = idx;
-        display_drv_pageToShow(page);
-        display_drv_event_set(SHOW_PAGE);
+	page.par_select = idx;
+	display_drv_pageToShow(page);
+	display_drv_event_set(SHOW_PAGE);
 }
 
 /**
@@ -83,33 +83,41 @@ void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
  */
 void pages_tones_page(struct tone_settings tone_set)
 {
-        display_pages_t page;
+	display_pages_t page;
 
-        strcpy(page.title, "TONES");
+	strcpy(page.title, "TONES");
 
-        page.EnDis = tone_set.EnDis;
+	page.EnDis = tone_set.EnDis;
 
-        strcpy(page.par[0].title, "TONE");
-        strcpy(page.par[1].title, "");
-        strcpy(page.par[2].title, "");
-        strcpy(page.par[3].title, "");
+	strcpy(page.par[0].title, "TONE[Hz];");
+	strcpy(page.par[1].title, "");
+	strcpy(page.par[2].title, "");
+	strcpy(page.par[3].title, "");
 
-        if(tone_set.tone == TONE_1KHZ)
-        {
-            snprintf(page.par[0].val, sizeof(page.par[0].val), "1KHZ");
-        }
-        else
-        {
-            snprintf(page.par[0].val, sizeof(page.par[0].val), "NONE");
-        }
+	if (tone_set.tone == TONE_500HZ)
+	{
+		snprintf(page.par[0].val, sizeof(page.par[0].val), "500");
+	}
+	else if (tone_set.tone == TONE_1KHZ)
+	{
+		snprintf(page.par[0].val, sizeof(page.par[0].val), "1000");
+	}
+	else if (tone_set.tone == TONE_3KHZ)
+	{
+		snprintf(page.par[0].val, sizeof(page.par[0].val), "3000");
+	}
+	else
+	{
+		snprintf(page.par[0].val, sizeof(page.par[0].val), "NONE");
+	}
 
-        snprintf(page.par[1].val, sizeof(page.par[1].val), "%c", '\0');
-        snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
-        snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+	snprintf(page.par[1].val, sizeof(page.par[1].val), "%c", '\0');
+	snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
+	snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
 
-        page.par_select = 0;
-        display_drv_pageToShow(page);
-        display_drv_event_set(SHOW_PAGE);
+	page.par_select = 0;
+	display_drv_pageToShow(page);
+	display_drv_event_set(SHOW_PAGE);
 }
 
 /**
@@ -119,7 +127,7 @@ void pages_tones_page(struct tone_settings tone_set)
  */
 void pages_set_current_page(enum pages_e page)
 {
-        current_page = page;
+	current_page = page;
 }
 
 /**
@@ -129,5 +137,5 @@ void pages_set_current_page(enum pages_e page)
  */
 enum pages_e pages_get_current_page(void)
 {
-        return current_page;
+	return current_page;
 }

@@ -201,11 +201,11 @@ static void dsp_filter(int32_t *sample)
 
 #if (ENABLE_STEREO_DIFF)
     data_f32 = ((sample[0]) / (float32_t)2147483648); // Normalization from int32 to float32 (range -1.0 to 1.0)
-    arm_float_to_q15(&data_f32, &data_q15, 1);      // Conversion from float32 to 15
+    arm_float_to_q15(&data_f32, &data_q15, 1);        // Conversion from float32 to 15
     lowpass_filter_exc(&data_q15, &out);
     filtered = (int32_t)(out * (65536)); // Conversion from q15 to int32 (2147483648 / 32768 = 65536)
-    sample[0] = filtered;                  // Left channel
-    sample[1] = filtered;                  // Right channel (equal to left)
+    sample[0] = filtered;                // Left channel
+    sample[1] = filtered;                // Right channel (equal to left)
 #else
     // Left channel
     data_f32 = ((sample[0]) / (float32_t)2147483648);
@@ -274,7 +274,7 @@ static void dsp_tone_gen(int32_t *sample)
     int32_t tone_samp = (int32_t)(signals_get_sample(audio_effects_handler.tone_set.tone) *
                                   (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
 
-    /* 
+    /*
      * Shift to upper 16 bits (according to bluetooth module data format)
      * Reduced to 10 bits shift to reduce amplification
      */
@@ -406,10 +406,10 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 
 /**
  * @brief bt_peer_select
- * 
- * @param peers 
- * @param size 
- * @return uint16_t 
+ *
+ * @param peers
+ * @param size
+ * @return uint16_t
  */
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size)
 {
@@ -539,21 +539,28 @@ static void page_handler(void)
         {
             audio_effects_handler.tone_set.EnDis = 1;
             audio_effects_handler.tone_set.tone = TONE_500HZ;
+            pages_tones_page(audio_effects_handler.tone_set);
         }
         else if (button_status == BUTTON_LEFT)
         {
             audio_effects_handler.tone_set.EnDis = 1;
             audio_effects_handler.tone_set.tone = TONE_1KHZ;
+            pages_tones_page(audio_effects_handler.tone_set);
         }
         else if (button_status == BUTTON_SET)
         {
             audio_effects_handler.tone_set.EnDis = 1;
             audio_effects_handler.tone_set.tone = TONE_3KHZ;
+            pages_tones_page(audio_effects_handler.tone_set);
         }
         else
         {
-            audio_effects_handler.tone_set.EnDis = 0;
-            audio_effects_handler.tone_set.tone = TONE_NONE;
+            if (audio_effects_handler.tone_set.EnDis > 0)
+            {
+                audio_effects_handler.tone_set.EnDis = 0;
+                audio_effects_handler.tone_set.tone = TONE_NONE;
+                pages_tones_page(audio_effects_handler.tone_set);
+            }
         }
         break;
     default:
