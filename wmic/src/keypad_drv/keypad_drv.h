@@ -16,6 +16,7 @@ enum buttons_e
     BUTTON_7 = (uint8_t)~BIT(6),
     BUTTON_8 = (uint8_t)~BIT(7),
     BUTTON_9 = (uint8_t)~BIT(8),
+    BUTTON_NO = 255,
 };
 
 enum led_e

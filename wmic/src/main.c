@@ -80,11 +80,11 @@ static void workq_100ms(struct k_work *work);
 
 #if (ENABLE_DSP_FILTER)
 static void dsp_filter_init();
-static void dsp_filter(int32_t *pmem);
+static void dsp_filter(int32_t *sample);
 #endif // ENABLE_DSP_FILTER
 static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
-static int dsp_tone_gen(void);
+static void dsp_tone_gen(int32_t *sample);
 static void dsp_amplifier(int32_t *sample);
 
 static int gpios_init(void);
@@ -123,7 +123,7 @@ int main(void)
         printk("Display and keypad init failed, resetting...\n");
         system_fault_handler();
     }
-        
+
     // Schedule 100ms work queue
     k_work_schedule(&workq, K_SECONDS(1));
 
@@ -192,7 +192,7 @@ static void dsp_filter_init(void)
  *
  * @return void
  */
-static void dsp_filter(int32_t *pmem)
+static void dsp_filter(int32_t *sample)
 {
     float32_t data_f32 = 0.0;
     q15_t data_q15;
@@ -200,24 +200,24 @@ static void dsp_filter(int32_t *pmem)
     int32_t filtered;
 
 #if (ENABLE_STEREO_DIFF)
-    data_f32 = ((pmem[0]) / (float32_t)2147483648); // Normalization from int32 to float32 (range -1.0 to 1.0)
+    data_f32 = ((sample[0]) / (float32_t)2147483648); // Normalization from int32 to float32 (range -1.0 to 1.0)
     arm_float_to_q15(&data_f32, &data_q15, 1);      // Conversion from float32 to 15
     lowpass_filter_exc(&data_q15, &out);
     filtered = (int32_t)(out * (65536)); // Conversion from q15 to int32 (2147483648 / 32768 = 65536)
-    pmem[0] = filtered;                  // Left channel
-    pmem[1] = filtered;                  // Right channel (equal to left)
+    sample[0] = filtered;                  // Left channel
+    sample[1] = filtered;                  // Right channel (equal to left)
 #else
     // Left channel
-    data_f32 = ((pmem[0]) / (float32_t)2147483648);
+    data_f32 = ((sample[0]) / (float32_t)2147483648);
     arm_float_to_q15(&data_f32, &data_q15, 1);
     lowpass_filter_exc(&data_q15, &out);
-    pmem[0] = (int32_t)(out * (2147483648 / 32768));
+    sample[0] = (int32_t)(out * (2147483648 / 32768));
 
     // Right channel
-    data_f32 = ((pmem[1]) / (float32_t)2147483648);
+    data_f32 = ((sample[1]) / (float32_t)2147483648);
     arm_float_to_q15(&data_f32, &data_q15, 1);
     lowpass_filter_exc(&data_q15, &out);
-    pmem[1] = (int32_t)(out * (2147483648 / 32768));
+    sample[1] = (int32_t)(out * (2147483648 / 32768));
 #endif // ENABLE_STEREO_DIFF
 
     return;
@@ -268,12 +268,19 @@ static void dsp_amplifier(int32_t *sample)
 
 /**
  * @brief dsp_tone_gen
- *
- * @return int
  */
-static int dsp_tone_gen(void)
+static void dsp_tone_gen(int32_t *sample)
 {
-    return 0;
+    int32_t tone_samp = (int32_t)(signals_get_sample(audio_effects_handler.tone_set.tone) *
+                                  (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
+
+    /* 
+     * Shift to upper 16 bits (according to bluetooth module data format)
+     * Reduced to 10 bits shift to reduce amplification
+     */
+    tone_samp = (tone_samp << 10);
+    sample[0] += tone_samp;
+    sample[1] -= tone_samp;
 }
 
 /**
@@ -371,10 +378,9 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #else
     for (int i = 0; i < size - 1; i += 2)
     {
-        if(audio_effects_handler.tone_set.EnDis > 0)
+        if (audio_effects_handler.tone_set.EnDis > 0)
         {
-            pmem[i] = dsp_tone_gen();
-            pmem[i+1] = pmem[i];
+            dsp_tone_gen(&pmem[i]);
         }
 
         if ((pmem[i] <= max) && (pmem[i] >= min))
@@ -390,11 +396,21 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #if (ENABLE_DSP_FILTER)
         dsp_filter(&pmem[i]);
 #endif // ENABLE_DSP_FILTER
-        dsp_adt(&pmem[i]);
+        if (audio_effects_handler.adt_set.EnDis > 0)
+        {
+            dsp_adt(&pmem[i]);
+        }
     }
 #endif // ENABLE_SIGNAL_GEN
 }
 
+/**
+ * @brief bt_peer_select
+ * 
+ * @param peers 
+ * @param size 
+ * @return uint16_t 
+ */
 static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_t *size)
 {
     uint8_t selected_peer;
@@ -430,27 +446,31 @@ static void inputs_handler_cb(void)
     enum buttons_e inputs_state = keypad_drv_btn_read();
     button_status = BUTTON_NONE;
 
+    if (inputs_state != BUTTON_NO)
+    {
+        // Turn on the display
+        display_drv_turn_on();
+
+        // Reset the timer
+        display_stb_timer = k_uptime_get();
+    }
+
     switch (inputs_state)
     {
-    case BUTTON_1:
-        keypad_drv_led_set(LED_1);
+    case BUTTON_5:
+        keypad_drv_led_set(LED_6);
         button_status = BUTTON_RIGHT;
-        // Reset the timer
-        display_stb_timer = k_uptime_get();
         break;
-    case BUTTON_2:
+    case BUTTON_7:
+        keypad_drv_led_set(LED_8);
         button_status = BUTTON_LEFT;
-        // Reset the timer
-        display_stb_timer = k_uptime_get();
         break;
-    case BUTTON_3:
+    case BUTTON_6:
+        keypad_drv_led_set(LED_1);
         button_status = BUTTON_SET;
-        // Reset the timer
-        display_stb_timer = k_uptime_get();
         break;
     case BUTTON_4:
-        // Reset the timer
-        display_stb_timer = k_uptime_get();
+        keypad_drv_led_set(LED_7);
         break;
     default:
         keypad_drv_led_clear(255);
@@ -485,6 +505,7 @@ static void page_handler(void)
             else if (button_status == BUTTON_SET)
             {
                 pages_set_current_page(ADT_PAGE);
+                pages_adt_page(audio_effects_handler.adt_set, 0);
                 peer_cb_exit = true; // Exit the peer selection loop in the bluetooth driver
             }
         }
@@ -506,6 +527,9 @@ static void page_handler(void)
         }
         else if (button_status == BUTTON_SET)
         {
+            audio_effects_handler.tone_set.EnDis = 0;
+            audio_effects_handler.tone_set.tone = TONE_NONE;
+            pages_tones_page(audio_effects_handler.tone_set);
             pages_set_current_page(TONE_GEN_PAGE);
         }
 
@@ -513,21 +537,25 @@ static void page_handler(void)
     case TONE_GEN_PAGE:
         if (button_status == BUTTON_RIGHT)
         {
+            audio_effects_handler.tone_set.EnDis = 1;
+            audio_effects_handler.tone_set.tone = TONE_500HZ;
         }
         else if (button_status == BUTTON_LEFT)
         {
+            audio_effects_handler.tone_set.EnDis = 1;
+            audio_effects_handler.tone_set.tone = TONE_1KHZ;
         }
         else if (button_status == BUTTON_SET)
         {
-           audio_effects_handler.tone_set.EnDis = 1;
-           audio_effects_handler.tone_set.tone = TONE_1KHZ;
+            audio_effects_handler.tone_set.EnDis = 1;
+            audio_effects_handler.tone_set.tone = TONE_3KHZ;
         }
         else
         {
-           audio_effects_handler.tone_set.EnDis = 0;
-           audio_effects_handler.tone_set.tone = TONE_NONE;
+            audio_effects_handler.tone_set.EnDis = 0;
+            audio_effects_handler.tone_set.tone = TONE_NONE;
         }
-         break;
+        break;
     default:
         break;
     }

@@ -2,6 +2,7 @@
 #define PAGES_H
 
 #include <stdint.h>
+#include "signals.h"
 
 enum pages_e
 {
@@ -9,12 +10,6 @@ enum pages_e
     PEERS_PAGE,
     ADT_PAGE,
     TONE_GEN_PAGE, 
-};
-
-enum tone_e
-{
-    TONE_NONE,
-    TONE_1KHZ,
 };
 
 // Audio effects data structures
