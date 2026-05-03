@@ -89,26 +89,26 @@ void pages_tones_page(struct tone_settings tone_set)
 
 	page.EnDis = tone_set.EnDis;
 
-	strcpy(page.par[0].title, "TONE[Hz];");
+	strcpy(page.par[0].title, "FREQ");
 	strcpy(page.par[1].title, "");
 	strcpy(page.par[2].title, "");
 	strcpy(page.par[3].title, "");
 
 	if (tone_set.tone == TONE_500HZ)
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), "500");
+		snprintf(page.par[0].val, sizeof(page.par[0].val), " 500");
 	}
 	else if (tone_set.tone == TONE_1KHZ)
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), "1000");
+		snprintf(page.par[0].val, sizeof(page.par[0].val), " 1k");
 	}
 	else if (tone_set.tone == TONE_3KHZ)
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), "3000");
+		snprintf(page.par[0].val, sizeof(page.par[0].val), " 3k");
 	}
 	else
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), "NONE");
+		snprintf(page.par[0].val, sizeof(page.par[0].val), " NO");
 	}
 
 	snprintf(page.par[1].val, sizeof(page.par[1].val), "%c", '\0');

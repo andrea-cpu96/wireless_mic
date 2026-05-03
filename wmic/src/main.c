@@ -484,10 +484,11 @@ static void inputs_handler_cb(void)
  */
 static void page_handler(void)
 {
+    static enum tone_e tone_previous = TONE_NONE;
+
     switch (pages_get_current_page())
     {
     case DEMO_PAGE:
-
         break;
     case PEERS_PAGE:
         if (peers_n > 0)
@@ -532,35 +533,33 @@ static void page_handler(void)
             pages_tones_page(audio_effects_handler.tone_set);
             pages_set_current_page(TONE_GEN_PAGE);
         }
-
         break;
     case TONE_GEN_PAGE:
         if (button_status == BUTTON_RIGHT)
         {
             audio_effects_handler.tone_set.EnDis = 1;
             audio_effects_handler.tone_set.tone = TONE_500HZ;
-            pages_tones_page(audio_effects_handler.tone_set);
         }
         else if (button_status == BUTTON_LEFT)
         {
             audio_effects_handler.tone_set.EnDis = 1;
             audio_effects_handler.tone_set.tone = TONE_1KHZ;
-            pages_tones_page(audio_effects_handler.tone_set);
         }
         else if (button_status == BUTTON_SET)
         {
             audio_effects_handler.tone_set.EnDis = 1;
             audio_effects_handler.tone_set.tone = TONE_3KHZ;
-            pages_tones_page(audio_effects_handler.tone_set);
         }
         else
         {
-            if (audio_effects_handler.tone_set.EnDis > 0)
-            {
-                audio_effects_handler.tone_set.EnDis = 0;
-                audio_effects_handler.tone_set.tone = TONE_NONE;
-                pages_tones_page(audio_effects_handler.tone_set);
-            }
+            audio_effects_handler.tone_set.EnDis = 0;
+            audio_effects_handler.tone_set.tone = TONE_NONE;
+        }
+
+        if (tone_previous != audio_effects_handler.tone_set.tone)
+        {
+            tone_previous = audio_effects_handler.tone_set.tone;
+            pages_tones_page(audio_effects_handler.tone_set);
         }
         break;
     default:
