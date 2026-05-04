@@ -86,6 +86,7 @@ static void dsp_filter(int32_t *sample);
 static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
 static void dsp_tone_gen(int32_t *sample);
+static void dsp_rec(int32_t *sample, int size);
 static void dsp_amplifier(int32_t *sample);
 
 static int gpios_init(void);
@@ -287,6 +288,37 @@ static void dsp_tone_gen(int32_t *sample)
 }
 
 /**
+ * @brief dsp_rec
+ *
+ * @param sample
+ * @param size
+ */
+static void dsp_rec(int32_t *sample, int size)
+{
+    static int storage_flag = 0;
+
+    uint32_t storage_w = 10;
+    uint32_t storage_r = 0;
+
+    if ((audio_effects_handler.rec_set.track1 == REC_START))
+    {
+        if(storage_flag == 0)
+        {
+            storage_flag = 1;
+            storage_write(0, &storage_w, 1);
+        }
+    }
+    else if (audio_effects_handler.rec_set.track1 == REC_RUN)
+    {
+        if(storage_flag == 1)
+        {
+            storage_flag = 0;
+            storage_read(0, &storage_r, 1);
+        }
+    }
+}
+
+/**
  * @brief gpios_init
  *
  * @return int
@@ -379,20 +411,10 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif // ENABLE_DSP_FILTER
     }
 #else
-    if (pages_get_current_page() == ADT_PAGE)
+    if (audio_effects_handler.rec_set.EnDis > 0)
     {
-        if (button_status == BUTTON_LEFT)
-        {
-            uint32_t storage = 10;
-            storage_write(0, &storage, 1); 
-        }
+        dsp_rec(pmem, size);
     }
-
-    uint32_t read = 0;
-    storage_read(0, &read, 1);  
-
-    if(read != 10)
-        return; 
 
     for (int i = 0; i < size - 1; i += 2)
     {
@@ -503,6 +525,7 @@ static void inputs_handler_cb(void)
  */
 static void page_handler(void)
 {
+    static enum buttons_status_e button_previous = BUTTON_NONE;
     static enum tone_e tone_previous = TONE_NONE;
 
     switch (pages_get_current_page())
@@ -533,24 +556,15 @@ static void page_handler(void)
     case ADT_PAGE:
         if (button_status == BUTTON_RIGHT)
         {
-            audio_effects_handler.adt_set.EnDis = 0;
-            audio_effects_handler.adt_set.delay = 5;
-            audio_effects_handler.adt_set.fading_lev = 0;
             pages_adt_page(audio_effects_handler.adt_set, 0);
         }
         else if (button_status == BUTTON_LEFT)
         {
-            audio_effects_handler.adt_set.EnDis = 0;
-            audio_effects_handler.adt_set.delay = 5;
-            audio_effects_handler.adt_set.fading_lev = 0;
-            pages_adt_page(audio_effects_handler.adt_set, 1);
         }
         else if (button_status == BUTTON_SET)
         {
-            audio_effects_handler.tone_set.EnDis = 0;
-            audio_effects_handler.tone_set.tone = TONE_NONE;
             pages_tones_page(audio_effects_handler.tone_set);
-            pages_set_current_page(TONE_GEN_PAGE);
+            pages_set_current_page(REC_PAGE);
         }
         break;
     case TONE_GEN_PAGE:
@@ -579,6 +593,42 @@ static void page_handler(void)
         {
             tone_previous = audio_effects_handler.tone_set.tone;
             pages_tones_page(audio_effects_handler.tone_set);
+        }
+        break;
+    case REC_PAGE:
+        if (audio_effects_handler.rec_set.EnDis > 0)
+        {
+            if (button_status != button_previous)
+            {
+                button_previous = button_status;
+                if (button_status == BUTTON_RIGHT)
+                {
+                    if (audio_effects_handler.rec_set.track1 == REC_NONE)
+                    {
+                        audio_effects_handler.rec_set.track1 = REC_START;
+                    }
+                    else if (audio_effects_handler.rec_set.track1 == REC_READY)
+                    {
+                        audio_effects_handler.rec_set.track1 = REC_RUN;
+                    }
+                    pages_rec_page(audio_effects_handler.rec_set);
+                }
+
+                if (button_status == BUTTON_NONE)
+                {
+                    if ((audio_effects_handler.rec_set.track1 == REC_START) ||
+                        (audio_effects_handler.rec_set.track1 == REC_RUN))
+                    {
+                        audio_effects_handler.rec_set.track1 = REC_READY;
+                    }
+                    pages_rec_page(audio_effects_handler.rec_set);
+                }
+            }
+        }
+        if (button_status == BUTTON_SET)
+        {
+            audio_effects_handler.rec_set.EnDis = 1;
+            pages_rec_page(audio_effects_handler.rec_set);
         }
         break;
     default:

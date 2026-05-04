@@ -121,6 +121,34 @@ void pages_tones_page(struct tone_settings tone_set)
 }
 
 /**
+ * @brief pages_rec_page
+ *
+ * @param rec_set
+ */
+void pages_rec_page(struct rec_settings rec_set)
+{
+	display_pages_t page;
+
+	strcpy(page.title, "REC");
+
+	page.EnDis = rec_set.EnDis;
+
+	strcpy(page.par[0].title, "TRK1;");
+	strcpy(page.par[1].title, "TRK2;");
+	strcpy(page.par[2].title, "TRK3;");
+	strcpy(page.par[3].title, "TRK4;");
+
+	snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", rec_set.track1);
+	snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", rec_set.track2);
+	snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", rec_set.track3);
+	snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", rec_set.track4);
+
+	page.par_select = 0;
+	display_drv_pageToShow(page);
+	display_drv_event_set(SHOW_PAGE);
+}
+
+/**
  * @brief set_current_page
  *
  * @param page
