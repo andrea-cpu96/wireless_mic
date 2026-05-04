@@ -6,6 +6,7 @@ project(wmic)
 target_sources(app PRIVATE 
     src/main.c
     src/pages.c
+    src/veeprom.c
     src/audio_drv/audio_drv.c
     src/DSP/low_pass_filter.c
     src/DSP/adt.c

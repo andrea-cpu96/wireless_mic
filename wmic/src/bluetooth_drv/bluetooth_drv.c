@@ -137,7 +137,7 @@ int bluetooth_drv_config(const struct device *uart, bt1036c_peers_cb cb, const u
     if (txrx_config != BT103036C_CONFIG_RX)
     {
         bluetooth_drv_at_send("SCAN=1"); // Scan advertised MAC addresses
-        k_sleep(K_MSEC(10000));
+        k_sleep(K_MSEC(1000));
 
         // Call calback for peer selction
         uint16_t peer_idx = cb(bluetooth_drv_handler.peer, &bluetooth_drv_handler.peer_num);

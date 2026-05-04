@@ -28,6 +28,7 @@
 #include <arm_math.h>
 
 #include "config.h"
+#include "veeprom.h"
 #include "audio_drv.h"
 #include "display_drv.h"
 #include "keypad_drv.h"
@@ -105,6 +106,8 @@ K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 
 int main(void)
 {
+    storage_init();
+
     // Filter init
 #if (ENABLE_DSP_FILTER)
     dsp_filter_init();
@@ -376,6 +379,21 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif // ENABLE_DSP_FILTER
     }
 #else
+    if (pages_get_current_page() == ADT_PAGE)
+    {
+        if (button_status == BUTTON_LEFT)
+        {
+            uint32_t storage = 10;
+            storage_write(0, &storage, 1); 
+        }
+    }
+
+    uint32_t read = 0;
+    storage_read(0, &read, 1);  
+
+    if(read != 10)
+        return; 
+
     for (int i = 0; i < size - 1; i += 2)
     {
         if (audio_effects_handler.tone_set.EnDis > 0)
@@ -428,6 +446,7 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
     {
         k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
         peers_n = *size;      // Update the number of peers
+        bluetooth_drv_at_send("SCAN=1");
     }
 
     selected_peer = peer_idex;
