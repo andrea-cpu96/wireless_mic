@@ -43,7 +43,7 @@ void storage_write(uint8_t id, const int32_t *data, int size)
         LOG_ERR("NVS not initialized");
         return;
     }
-    int rc = nvs_write(&fs, id, data, size * sizeof(int32_t));
+    int rc = nvs_write(&fs, id, data, size);
     if (rc < 0) {
         LOG_ERR("NVS write failed: %d", rc);
     }
@@ -55,7 +55,7 @@ void storage_read(uint8_t id, int32_t *data, int size)
         LOG_ERR("NVS not initialized");
         return;
     }
-    int rc = nvs_read(&fs, id, data, size * sizeof(int32_t));
+    int rc = nvs_read(&fs, id, data, size);
     if (rc < 0) {
         LOG_ERR("NVS read failed: %d", rc);
     }

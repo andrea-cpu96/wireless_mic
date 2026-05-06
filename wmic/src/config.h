@@ -1,6 +1,6 @@
 #include "bluetooth_drv.h"
 
-#define DEBUG_MODE  false
+#define TEST_REC true
 
 #define TXRX_MODULE BT103036C_CONFIG_TX
 #define ENABLE_DSP_FILTER false

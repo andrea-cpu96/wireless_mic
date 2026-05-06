@@ -77,8 +77,10 @@ const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 // Audio effects data structures
 static audio_effects_handler_t audio_effects_handler;
 
-volatile uint32_t storage_w = 10;
-volatile uint32_t storage_r = 0;
+#if (TEST_REC)
+    volatile int32_t rec_data_w[10] = {10};
+    volatile int32_t rec_data_r[10] = {0};
+#endif // TEST_REC
 
 static void workq_100ms(struct k_work *work);
 
@@ -134,7 +136,6 @@ int main(void)
     // Schedule 100ms work queue
     k_work_schedule(&workq, K_SECONDS(1));
 
-#if (!DEBUG_MODE)
     // Bluetooth init
     if (bt_init() != 0)
     {
@@ -147,7 +148,7 @@ int main(void)
         printk("Audio init failed, resetting...\n");
         system_fault_handler();
     }
-#endif // DEBUG_MODE
+
     k_sleep(K_MSEC(500));
 
     // App is running
@@ -301,17 +302,25 @@ static void dsp_rec(int32_t *sample, int size)
     static int id = 0;
     static int id_max = 0;
 
+#if (TEST_REC)
     if ((audio_effects_handler.rec_set.track1 == REC_START))
     {
-            storage_write(id, sample, 5000);
+        if (id < 1)
+        {
+            storage_write(id, rec_data_w, sizeof(rec_data_w));
             id++;
             id_max = id;
+        }
     }
     else if (audio_effects_handler.rec_set.track1 == REC_RUN)
     {
-            storage_read(id_max-id, sample, 5000);
+        if(id > 0)
+        {
+            storage_read(id_max-id, rec_data_r, sizeof(rec_data_r));
             id--;
+        }
     }
+#endif // TEST_REC
 }
 
 /**
@@ -409,6 +418,9 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #else
     if (audio_effects_handler.rec_set.EnDis > 0)
     {
+#if (TEST_REC)
+        
+#endif // TEST_REC
         dsp_rec(pmem, size);
     }
 
