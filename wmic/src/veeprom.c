@@ -8,8 +8,10 @@
 
 LOG_MODULE_REGISTER(veeprom, LOG_LEVEL_INF);
 
-static struct nvs_fs fs;
-static bool nvs_initialized = false;
+#define VEEPROM_SECTOR_SIZE 4096
+
+volatile static struct nvs_fs fs;
+volatile static bool nvs_initialized = false;
 
 void storage_init(void)
 {
@@ -22,10 +24,10 @@ void storage_init(void)
 
     fs.flash_device = flash_dev;
     fs.offset = FLASH_AREA_OFFSET(storage);
-    fs.sector_size = 4096;
-    fs.sector_count = 6;  /* 6 * 4096 = 24576 bytes = 0x6000 */
+    fs.sector_size = VEEPROM_SECTOR_SIZE;
+    fs.sector_count = (int)(PM_NVS_STORAGE_SIZE / VEEPROM_SECTOR_SIZE); 
 
-    int rc = nvs_mount(&fs);
+    volatile int rc = nvs_mount(&fs);
     if (rc) {
         LOG_ERR("NVS mount failed: %d", rc);
         nvs_initialized = false;

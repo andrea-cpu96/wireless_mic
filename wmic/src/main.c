@@ -77,6 +77,9 @@ const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 // Audio effects data structures
 static audio_effects_handler_t audio_effects_handler;
 
+volatile uint32_t storage_w = 10;
+volatile uint32_t storage_r = 0;
+
 static void workq_100ms(struct k_work *work);
 
 #if (ENABLE_DSP_FILTER)
@@ -295,26 +298,19 @@ static void dsp_tone_gen(int32_t *sample)
  */
 static void dsp_rec(int32_t *sample, int size)
 {
-    static int storage_flag = 0;
-
-    uint32_t storage_w = 10;
-    uint32_t storage_r = 0;
+    static int id = 0;
+    static int id_max = 0;
 
     if ((audio_effects_handler.rec_set.track1 == REC_START))
     {
-        if(storage_flag == 0)
-        {
-            storage_flag = 1;
-            storage_write(0, &storage_w, 1);
-        }
+            storage_write(id, sample, 5000);
+            id++;
+            id_max = id;
     }
     else if (audio_effects_handler.rec_set.track1 == REC_RUN)
     {
-        if(storage_flag == 1)
-        {
-            storage_flag = 0;
-            storage_read(0, &storage_r, 1);
-        }
+            storage_read(id_max-id, sample, 5000);
+            id--;
     }
 }
 
