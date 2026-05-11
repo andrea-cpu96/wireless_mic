@@ -46,22 +46,15 @@ const float min = MIN_LIMIT;
 // LED data structures
 const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_NODELABEL(led1), gpios);
 
-enum buttons_status_e
-{
-    BUTTON_NONE,
-    BUTTON_RIGHT,
-    BUTTON_LEFT,
-    BUTTON_SET,
-};
-
 // Buttons state variables
 static enum buttons_status_e button_status = BUTTON_NONE;
 
 // Bluetooth peers data structures
-const struct bluetooth_peers *peers_p;
-static uint8_t peer_idex = 0;
-static uint8_t peers_n = 0;
-static bool peer_cb_exit = false;
+struct bluetooth_peers_struct bluetooth_peers_handler = {
+    .peers_p = NULL,
+    .peer_idex = 0,
+    .peers_n = 0,
+    .peer_cb_exit = false};
 
 static int64_t display_stb_timer = 0;
 
@@ -78,8 +71,8 @@ const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 static audio_effects_handler_t audio_effects_handler;
 
 #if (TEST_REC)
-    volatile int32_t rec_data_w[10] = {1,2,3,4,5,6,7,8,9,10};
-    volatile int32_t rec_data_r[10] = {0};
+volatile int32_t rec_data_w[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+volatile int32_t rec_data_r[10] = {0};
 #endif // TEST_REC
 
 static void workq_100ms(struct k_work *work);
@@ -315,9 +308,9 @@ static void dsp_rec(int32_t *sample, int size)
     }
     else if (audio_effects_handler.rec_set.track1 == REC_RUN)
     {
-        if(id > 0)
+        if (id > 0)
         {
-            storage_read(id_max-id, sample, size);
+            storage_read(id_max - id, sample, size);
             id--;
         }
     }
@@ -420,7 +413,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     if (audio_effects_handler.rec_set.EnDis > 0)
     {
 #if (TEST_REC)
-        
+
 #endif // TEST_REC
         dsp_rec(pmem, block_size);
     }
@@ -464,26 +457,26 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 {
     uint8_t selected_peer;
 
-    peer_idex = 0;
+    bluetooth_peers_handler.peer_idex = 0;
 
     pages_set_current_page(PEERS_PAGE);
-    peers_p = peers; // Store peers in a global variable to be used in the page handler and in the inputs handler callback
+    bluetooth_peers_handler.peers_p = peers; // Store peers in a global variable to be used in the page handler and in the inputs handler callback
 
     // Set a string to be shown onto the display
-    display_drv_strToShow(peers_p[peer_idex].name);
+    display_drv_strToShow(bluetooth_peers_handler.peers_p[bluetooth_peers_handler.peer_idex].name);
     display_drv_event_set(SHOW_STRING);
 
-    while (peer_cb_exit == false)
+    while (bluetooth_peers_handler.peer_cb_exit == false)
     {
-        k_sleep(K_MSEC(300)); // Gives time to the bluetooth thread to check for other peers
-        peers_n = *size;      // Update the number of peers
+        k_sleep(K_MSEC(300));                    // Gives time to the bluetooth thread to check for other peers
+        bluetooth_peers_handler.peers_n = *size; // Update the number of peers
         bluetooth_drv_at_send("SCAN=1");
     }
 
-    selected_peer = peer_idex;
-    peer_idex = 0;        // Reset the peer index
-    peers_n = 0;          // Reset the number of peers
-    peer_cb_exit = false; // Reset the peer callback exit flag
+    selected_peer = bluetooth_peers_handler.peer_idex;
+    bluetooth_peers_handler.peer_idex = 0;        // Reset the peer index
+    bluetooth_peers_handler.peers_n = 0;          // Reset the number of peers
+    bluetooth_peers_handler.peer_cb_exit = false; // Reset the peer callback exit flag
     return selected_peer;
 }
 
@@ -534,111 +527,21 @@ static void inputs_handler_cb(void)
  */
 static void page_handler(void)
 {
-    static enum buttons_status_e button_previous = BUTTON_NONE;
-    static enum tone_e tone_previous = TONE_NONE;
-
     switch (pages_get_current_page())
     {
     case DEMO_PAGE:
         break;
     case PEERS_PAGE:
-        if (peers_n > 0)
-        {
-            if (button_status == BUTTON_RIGHT)
-            {
-                peer_idex = ((peer_idex + 1) % peers_n);
-                pages_peers_page(peers_p[peer_idex].name);
-            }
-            else if (button_status == BUTTON_LEFT)
-            {
-                peer_idex = (peer_idex == 0) ? (peers_n - 1) : (peer_idex - 1);
-                pages_peers_page(peers_p[peer_idex].name);
-            }
-            else if (button_status == BUTTON_SET)
-            {
-                pages_set_current_page(ADT_PAGE);
-                pages_adt_page(audio_effects_handler.adt_set, 0);
-                peer_cb_exit = true; // Exit the peer selection loop in the bluetooth driver
-            }
-        }
+        pages_peers_page(button_status, &bluetooth_peers_handler);
         break;
     case ADT_PAGE:
-        if (button_status == BUTTON_RIGHT)
-        {
-            pages_adt_page(audio_effects_handler.adt_set, 0);
-        }
-        else if (button_status == BUTTON_LEFT)
-        {
-        }
-        else if (button_status == BUTTON_SET)
-        {
-            pages_tones_page(audio_effects_handler.tone_set);
-            pages_set_current_page(REC_PAGE);
-        }
+        pages_adt_page(button_status, &audio_effects_handler.adt_set);
         break;
     case TONE_GEN_PAGE:
-        if (button_status == BUTTON_RIGHT)
-        {
-            audio_effects_handler.tone_set.EnDis = 1;
-            audio_effects_handler.tone_set.tone = TONE_500HZ;
-        }
-        else if (button_status == BUTTON_LEFT)
-        {
-            audio_effects_handler.tone_set.EnDis = 1;
-            audio_effects_handler.tone_set.tone = TONE_1KHZ;
-        }
-        else if (button_status == BUTTON_SET)
-        {
-            audio_effects_handler.tone_set.EnDis = 1;
-            audio_effects_handler.tone_set.tone = TONE_3KHZ;
-        }
-        else
-        {
-            audio_effects_handler.tone_set.EnDis = 0;
-            audio_effects_handler.tone_set.tone = TONE_NONE;
-        }
-
-        if (tone_previous != audio_effects_handler.tone_set.tone)
-        {
-            tone_previous = audio_effects_handler.tone_set.tone;
-            pages_tones_page(audio_effects_handler.tone_set);
-        }
+        pages_tones_page(button_status, &audio_effects_handler.tone_set);
         break;
     case REC_PAGE:
-        if (audio_effects_handler.rec_set.EnDis > 0)
-        {
-            if (button_status != button_previous)
-            {
-                button_previous = button_status;
-                if (button_status == BUTTON_RIGHT)
-                {
-                    if (audio_effects_handler.rec_set.track1 == REC_NONE)
-                    {
-                        audio_effects_handler.rec_set.track1 = REC_START;
-                    }
-                    else if (audio_effects_handler.rec_set.track1 == REC_READY)
-                    {
-                        audio_effects_handler.rec_set.track1 = REC_RUN;
-                    }
-                    pages_rec_page(audio_effects_handler.rec_set);
-                }
-
-                if (button_status == BUTTON_NONE)
-                {
-                    if ((audio_effects_handler.rec_set.track1 == REC_START) ||
-                        (audio_effects_handler.rec_set.track1 == REC_RUN))
-                    {
-                        audio_effects_handler.rec_set.track1 = REC_READY;
-                    }
-                    pages_rec_page(audio_effects_handler.rec_set);
-                }
-            }
-        }
-        if (button_status == BUTTON_SET)
-        {
-            audio_effects_handler.rec_set.EnDis = 1;
-            pages_rec_page(audio_effects_handler.rec_set);
-        }
+        pages_rec_page(button_status, &audio_effects_handler.rec_set);
         break;
     default:
         break;

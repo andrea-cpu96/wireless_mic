@@ -4,9 +4,13 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "bluetooth_drv.h"
 #include "display_drv.h"
+#include "signals.h"
 
 static enum pages_e current_page = PEERS_PAGE;
+
+static uint8_t page_changed_flag = 1;
 
 /**
  * @brief pages_demo_page
@@ -39,113 +43,246 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
 /**
  * @brief pages_peers_page
  *
- * @param peer_name
+ * @param button_status
+ * @param peers_handler
  */
-void pages_peers_page(const char *peer_name)
+void pages_peers_page(enum buttons_status_e button_status,
+											struct bluetooth_peers_struct *peers_handler)
 {
-	display_drv_strToShow(peer_name);
-	display_drv_event_set(SHOW_STRING);
+	uint8_t display_flag = 0;
+
+	if (peers_handler->peers_n > 0)
+	{
+		if (button_status == BUTTON_RIGHT)
+		{
+			peers_handler->peer_idex = ((peers_handler->peer_idex + 1) % peers_handler->peers_n);
+			display_flag = 1;
+		}
+		else if (button_status == BUTTON_LEFT)
+		{
+			peers_handler->peer_idex = (peers_handler->peer_idex == 0) ? (peers_handler->peers_n - 1) : (peers_handler->peer_idex - 1);
+			display_flag = 1;
+		}
+		else if (button_status == BUTTON_SET)
+		{
+			peers_handler->peer_cb_exit = true; // Exit the peer selection loop in the bluetooth driver
+			pages_set_current_page(ADT_PAGE);
+			page_changed_flag = 1;
+		}
+	}
+
+	if (display_flag == 1)
+	{
+		display_drv_strToShow(peers_handler->peers_p[peers_handler->peer_idex].name);
+		display_drv_event_set(SHOW_STRING);
+	}
 }
 
 /**
  * @brief pages_adt_page
  *
+ * @param button_status
  * @param adt_set
- * @param idx
  */
-void pages_adt_page(struct adt_settings adt_set, uint8_t idx)
+void pages_adt_page(enum buttons_status_e button_status,
+										struct adt_settings *adt_set)
 {
+	uint8_t display_flag = 0;
+
 	display_pages_t page;
+	uint8_t idx = 0;
 
-	strcpy(page.title, "ADT");
+	display_flag = page_changed_flag;
+	page_changed_flag = 0;
 
-	page.EnDis = adt_set.EnDis;
+	if (button_status == BUTTON_RIGHT)
+	{
+		display_flag = 1;
+		idx = 0;
+	}
+	else if (button_status == BUTTON_LEFT)
+	{
+	}
+	else if (button_status == BUTTON_SET)
+	{
+		pages_set_current_page(TONE_GEN_PAGE);
+		page_changed_flag = 1;
+	}
 
-	strcpy(page.par[0].title, "DEL;");
-	strcpy(page.par[1].title, "AMP;");
-	strcpy(page.par[2].title, "");
-	strcpy(page.par[3].title, "");
+	if (display_flag)
+	{
+		strcpy(page.title, "ADT");
 
-	snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", adt_set.delay);
-	snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", adt_set.fading_lev);
-	snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
-	snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+		page.EnDis = adt_set->EnDis;
 
-	page.par_select = idx;
-	display_drv_pageToShow(page);
-	display_drv_event_set(SHOW_PAGE);
+		strcpy(page.par[0].title, "DEL;");
+		strcpy(page.par[1].title, "AMP;");
+		strcpy(page.par[2].title, "");
+		strcpy(page.par[3].title, "");
+
+		snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", adt_set->delay);
+		snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", adt_set->fading_lev);
+		snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
+		snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+
+		page.par_select = idx;
+		display_drv_pageToShow(page);
+		display_drv_event_set(SHOW_PAGE);
+	}
 }
 
 /**
  * @brief pages_tones_page
  *
+ * @param button_status
  * @param tone_set
  */
-void pages_tones_page(struct tone_settings tone_set)
+void pages_tones_page(enum buttons_status_e button_status,
+											struct tone_settings *tone_set)
 {
+	static enum tone_e tone_previous = TONE_NONE;
+
+	uint8_t display_flag = 0;
 	display_pages_t page;
 
-	strcpy(page.title, "TONES");
+	display_flag = page_changed_flag;
+	page_changed_flag = 0;
 
-	page.EnDis = tone_set.EnDis;
-
-	strcpy(page.par[0].title, "FREQ");
-	strcpy(page.par[1].title, "");
-	strcpy(page.par[2].title, "");
-	strcpy(page.par[3].title, "");
-
-	if (tone_set.tone == TONE_500HZ)
+	if (button_status == BUTTON_RIGHT)
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), " 500");
+		tone_set->EnDis = 1;
+		tone_set->tone = TONE_500HZ;
 	}
-	else if (tone_set.tone == TONE_1KHZ)
+	else if (button_status == BUTTON_LEFT)
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), " 1k");
+		tone_set->EnDis = 1;
+		tone_set->tone = TONE_1KHZ;
 	}
-	else if (tone_set.tone == TONE_3KHZ)
+	else if (button_status == BUTTON_SET)
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), " 3k");
+		pages_set_current_page(REC_PAGE);
+		page_changed_flag = 1;
 	}
 	else
 	{
-		snprintf(page.par[0].val, sizeof(page.par[0].val), " NO");
+		tone_set->EnDis = 0;
+		tone_set->tone = TONE_NONE;
 	}
 
-	snprintf(page.par[1].val, sizeof(page.par[1].val), "%c", '\0');
-	snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
-	snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+	if (tone_previous != tone_set->tone)
+	{
+		tone_previous = tone_set->tone;
+		display_flag = 1;
+	}
 
-	page.par_select = 0;
-	display_drv_pageToShow(page);
-	display_drv_event_set(SHOW_PAGE);
+	if (display_flag)
+	{
+		strcpy(page.title, "TONES");
+
+		page.EnDis = tone_set->EnDis;
+
+		strcpy(page.par[0].title, "FREQ");
+		strcpy(page.par[1].title, "");
+		strcpy(page.par[2].title, "");
+		strcpy(page.par[3].title, "");
+
+		if (tone_set->tone == TONE_500HZ)
+		{
+			snprintf(page.par[0].val, sizeof(page.par[0].val), " 500");
+		}
+		else if (tone_set->tone == TONE_1KHZ)
+		{
+			snprintf(page.par[0].val, sizeof(page.par[0].val), " 1k");
+		}
+		else if (tone_set->tone == TONE_3KHZ)
+		{
+			snprintf(page.par[0].val, sizeof(page.par[0].val), " 3k");
+		}
+		else
+		{
+			snprintf(page.par[0].val, sizeof(page.par[0].val), " NO");
+		}
+
+		snprintf(page.par[1].val, sizeof(page.par[1].val), "%c", '\0');
+		snprintf(page.par[2].val, sizeof(page.par[2].val), "%c", '\0');
+		snprintf(page.par[3].val, sizeof(page.par[3].val), "%c", '\0');
+
+		page.par_select = 0;
+		display_drv_pageToShow(page);
+		display_drv_event_set(SHOW_PAGE);
+	}
 }
 
 /**
  * @brief pages_rec_page
  *
+ * @param button_status
  * @param rec_set
  */
-void pages_rec_page(struct rec_settings rec_set)
+void pages_rec_page(enum buttons_status_e button_status, struct rec_settings *rec_set)
 {
+	static enum buttons_status_e button_previous = BUTTON_NONE;
+	uint8_t display_flag = 0;
 	display_pages_t page;
 
-	strcpy(page.title, "REC");
+	display_flag = page_changed_flag;
+	page_changed_flag = 0;
 
-	page.EnDis = rec_set.EnDis;
+	if (rec_set->EnDis > 0)
+	{
+		if (button_status != button_previous)
+		{
+			button_previous = button_status;
+			if (button_status == BUTTON_RIGHT)
+			{
+				if (rec_set->track1 == REC_NONE)
+				{
+					rec_set->track1 = REC_START;
+				}
+				else if (rec_set->track1 == REC_READY)
+				{
+					rec_set->track1 = REC_RUN;
+				}
+				display_flag = 1;
+			}
 
-	strcpy(page.par[0].title, "TRK1;");
-	strcpy(page.par[1].title, "TRK2;");
-	strcpy(page.par[2].title, "TRK3;");
-	strcpy(page.par[3].title, "TRK4;");
+			if (button_status == BUTTON_NONE)
+			{
+				if ((rec_set->track1 == REC_START) ||
+						(rec_set->track1 == REC_RUN))
+				{
+					rec_set->track1 = REC_READY;
+				}
+				display_flag = 1;
+			}
+		}
+	}
+	if (button_status == BUTTON_SET)
+	{
+		rec_set->EnDis = 1;
+		display_flag = 1;
+	}
 
-	snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", rec_set.track1);
-	snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", rec_set.track2);
-	snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", rec_set.track3);
-	snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", rec_set.track4);
+	if (display_flag)
+	{
+		strcpy(page.title, "REC");
 
-	page.par_select = 0;
-	display_drv_pageToShow(page);
-	display_drv_event_set(SHOW_PAGE);
+		page.EnDis = rec_set->EnDis;
+		
+		strcpy(page.par[0].title, "TRK1;");
+		strcpy(page.par[1].title, "TRK2;");
+		strcpy(page.par[2].title, "TRK3;");
+		strcpy(page.par[3].title, "TRK4;");
+
+		snprintf(page.par[0].val, sizeof(page.par[0].val), "%d", rec_set->track1);
+		snprintf(page.par[1].val, sizeof(page.par[1].val), "%d", rec_set->track2);
+		snprintf(page.par[2].val, sizeof(page.par[2].val), "%d", rec_set->track3);
+		snprintf(page.par[3].val, sizeof(page.par[3].val), "%d", rec_set->track4);
+
+		page.par_select = 0;
+		display_drv_pageToShow(page);
+		display_drv_event_set(SHOW_PAGE);
+	}
 }
 
 /**

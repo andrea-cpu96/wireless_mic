@@ -14,6 +14,14 @@ struct bluetooth_peers
     char mac[100];
 };
 
+struct bluetooth_peers_struct
+{
+    const struct bluetooth_peers *peers_p;
+    uint8_t peer_idex;
+    uint8_t peers_n;
+    bool peer_cb_exit;
+};
+
 typedef uint16_t (*bt1036c_peers_cb)(const struct bluetooth_peers *peers, const int16_t *size); // Callback function for peers setting
 
 int bluetooth_drv_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t txrx_config);
