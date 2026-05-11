@@ -82,10 +82,12 @@ nrfjprog --eraseall
 nrfjprog --program wmic/build/zephyr/zephyr.hex --verify --reset
 ```
 
-Or use the Zephyr `west` wrapper if available:
+> Note: `nrfjprog` must be installed and available on `PATH` (Nordic Command Line Tools).
+
+Or use the Zephyr `west` wrapper if available and force the board-appropriate runner:
 
 ```bash
-west flash --build-dir wmic/build
+west flash --build-dir wmic/build --runner nrfjprog
 ```
 
 ## Troubleshooting
