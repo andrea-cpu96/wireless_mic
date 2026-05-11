@@ -299,15 +299,16 @@ static void dsp_tone_gen(int32_t *sample)
  */
 static void dsp_rec(int32_t *sample, int size)
 {
+    const int id_limit = 100; // 1 second
     static int id = 0;
     static int id_max = 0;
 
 #if (TEST_REC)
     if ((audio_effects_handler.rec_set.track1 == REC_START))
     {
-        if (id < 5)
+        if (id < id_limit)
         {
-            storage_write(id, &rec_data_w[id], sizeof(rec_data_w[0]));
+            storage_write(id, sample, size);
             id++;
             id_max = id;
         }
@@ -316,7 +317,7 @@ static void dsp_rec(int32_t *sample, int size)
     {
         if(id > 0)
         {
-            storage_read(id_max-id, &rec_data_r[id_max-id], sizeof(rec_data_r[0]));
+            storage_read(id_max-id, sample, size);
             id--;
         }
     }
@@ -421,7 +422,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #if (TEST_REC)
         
 #endif // TEST_REC
-        dsp_rec(pmem, size);
+        dsp_rec(pmem, block_size);
     }
 
     for (int i = 0; i < size - 1; i += 2)
