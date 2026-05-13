@@ -6,57 +6,73 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>
 
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
+
 LOG_MODULE_REGISTER(veeprom, LOG_LEVEL_INF);
 
 #define VEEPROM_SECTOR_SIZE 4096
+#define VEEPROM_SECTOR_COUNT (CONFIG_PM_PARTITION_SIZE_NVS_STORAGE / VEEPROM_SECTOR_SIZE)
 
-volatile static struct nvs_fs fs;
-volatile static bool nvs_initialized = false;
+static const struct device *flash_dev;
+static uint32_t flash_offset;
+static uint32_t flash_size;
 
-void storage_init(void)
+/**
+ * @brief veeprom_init
+ */
+void veeprom_init(void)
 {
-    /* Get the flash device for the storage partition */
-    const struct device *flash_dev = FLASH_AREA_DEVICE(storage);
-    if (flash_dev == NULL) {
+    flash_dev = FLASH_AREA_DEVICE(storage);
+    if (!flash_dev)
+    {
         LOG_ERR("Flash device not found");
         return;
     }
 
-    fs.flash_device = flash_dev;
-    fs.offset = FLASH_AREA_OFFSET(storage);
-    fs.sector_size = VEEPROM_SECTOR_SIZE;
-    fs.sector_count = (int)(PM_NVS_STORAGE_SIZE / VEEPROM_SECTOR_SIZE); 
+    flash_offset = FLASH_AREA_OFFSET(storage);
+    flash_size = FLASH_AREA_SIZE(storage);
 
-    volatile int rc = nvs_mount(&fs);
-    if (rc) {
-        LOG_ERR("NVS mount failed: %d", rc);
-        nvs_initialized = false;
-    } else {
-        LOG_INF("NVS mounted at offset 0x%lx", fs.offset);
-        nvs_initialized = true;
-    }
+    LOG_INF("Flash RAW storage at 0x%08x, size %u bytes",
+            flash_offset, flash_size);
+    
+    /*
+     * Clear flash sectors dedicated to VEEPROM
+     *
+     * NOTE: This is necessary to avoid data corruption when writing to flash,
+     * as flash_write can only change bits from 1 to 0, and not from 0 to 1.
+     */
+    flash_erase(flash_dev, flash_offset, VEEPROM_SECTOR_SIZE * VEEPROM_SECTOR_COUNT);
 }
 
-void storage_write(uint8_t id, const int32_t *data, int size)
+/**
+ * @brief veeprom_write
+ *
+ * @param data
+ * @param size
+ * @return int
+ */
+int veeprom_write(const int32_t *data, int size)
 {
-    if (!nvs_initialized) {
-        LOG_ERR("NVS not initialized");
-        return;
-    }
-    int rc = nvs_write(&fs, id, data, size);
-    if (rc < 0) {
-        LOG_ERR("NVS write failed: %d", rc);
-    }
+    static int new_start_address = 0;
+    int address = new_start_address;
+
+    flash_write(flash_dev, flash_offset + new_start_address,
+                data, size);
+
+    new_start_address += size;
+
+    return  address;
 }
 
-void storage_read(uint8_t id, int32_t *data, int size)
+/**
+ * @brief veeprom_read
+ *
+ * @param address
+ * @param data
+ * @param size
+ */
+void veeprom_read(int address, int32_t *data, int size)
 {
-    if (!nvs_initialized) {
-        LOG_ERR("NVS not initialized");
-        return;
-    }
-    int rc = nvs_read(&fs, id, data, size);
-    if (rc < 0) {
-        LOG_ERR("NVS read failed: %d", rc);
-    }
+    flash_read(flash_dev, flash_offset + address, data, size);
 }
