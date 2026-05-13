@@ -101,11 +101,18 @@ static void display_stb(void);
 
 static void system_fault_handler(void);
 
+volatile int mem_address[10] = {0};
+volatile uint8_t mem_id = 0;
+volatile int id = 0;
+volatile int64_t debug_dsp_rec_start_ms = 0;
+volatile int64_t debug_dsp_rec_end_ms = 0;
+volatile int64_t debug_dsp_rec_elapsed_ms = 0;
+
 K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 
 int main(void)
 {
-    storage_init();
+    veeprom_init();
 
     // Filter init
 #if (ENABLE_DSP_FILTER)
@@ -292,26 +299,23 @@ static void dsp_tone_gen(int32_t *sample)
  */
 static void dsp_rec(int32_t *sample, int size)
 {
-    const int id_limit = 100; // 1 second
-    static int id = 0;
-    static int id_max = 0;
+    static int id = 0; 
 
 #if (TEST_REC)
     if ((audio_effects_handler.rec_set.track1 == REC_START))
     {
         if (id < id_limit)
         {
-            storage_write(id, sample, size);
-            id++;
-            id_max = id;
+            mem_address[mem_id] = veeprom_write(sample, size);
+            mem_id++;
         }
     }
     else if (audio_effects_handler.rec_set.track1 == REC_RUN)
     {
-        if (id > 0)
+        if (id < mem_id)
         {
-            storage_read(id_max - id, sample, size);
-            id--;
+            storage_read(id, sample, size);
+            id++;
         }
     }
 #endif // TEST_REC
@@ -410,13 +414,15 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif // ENABLE_DSP_FILTER
     }
 #else
+#if (TEST_REC)
     if (audio_effects_handler.rec_set.EnDis > 0)
     {
-#if (TEST_REC)
-
-#endif // TEST_REC
-        dsp_rec(pmem, block_size);
+        debug_dsp_rec_start_ms = k_uptime_get();
+        dsp_rec(pmem, size);
+        debug_dsp_rec_end_ms = k_uptime_get();
+        debug_dsp_rec_elapsed_ms = debug_dsp_rec_end_ms - debug_dsp_rec_start_ms;
     }
+#endif // TEST_REC
 
     for (int i = 0; i < size - 1; i += 2)
     {

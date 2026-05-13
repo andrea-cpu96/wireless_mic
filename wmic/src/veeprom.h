@@ -1,5 +1,5 @@
 #include <stdint.h>
 
-void storage_init(void);
-void storage_write(uint8_t id, const int32_t *data, int size);
-void storage_read(uint8_t id, int32_t *data, int size);
+void veeprom_init(void);
+int veeprom_write(const int32_t *data, int size);
+void veeprom_read(uint8_t id, int32_t *data, int size);
