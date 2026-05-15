@@ -71,8 +71,8 @@ const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 static audio_effects_handler_t audio_effects_handler;
 
 #if (TEST_REC)
-volatile int32_t rec_data_w[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-volatile int32_t rec_data_r[10] = {0};
+volatile int16_t rec_data[50000] = {0};
+volatile int rec_data_index = 0;
 #endif // TEST_REC
 
 static void workq_100ms(struct k_work *work);
@@ -101,7 +101,7 @@ static void display_stb(void);
 
 static void system_fault_handler(void);
 
-volatile int mem_address[10] = {0};
+volatile uint32_t mem_address[40] = {0};
 volatile uint8_t mem_id = 0;
 volatile int id = 0;
 volatile int64_t debug_dsp_rec_start_ms = 0;
@@ -168,6 +168,11 @@ int main(void)
  */
 static void workq_100ms(struct k_work *work)
 {
+#if (TEST_REC)
+    static uint8_t first = 1;
+    static int id = 0;
+#endif // TEST_REC
+
     // ADT init
     if (audio_effects_handler.adt_set.EnDis > 0)
     {
@@ -175,11 +180,32 @@ static void workq_100ms(struct k_work *work)
     }
 
     inputs_handler_cb();
-
     // Pages handler
     page_handler();
 
     display_stb();
+
+#if (TEST_REC)
+    if (rec_data_index >= 40000)
+    {
+        if (first)
+        {
+            if (id < 40)
+            {
+                debug_dsp_rec_start_ms = k_uptime_get();
+                mem_address[id] = veeprom_write(rec_data, 2200);
+                debug_dsp_rec_end_ms = k_uptime_get();
+                debug_dsp_rec_elapsed_ms = debug_dsp_rec_end_ms - debug_dsp_rec_start_ms;
+                id++;
+            }
+            else
+            {
+                first = 0;
+            }
+        }
+    }
+#endif // TEST_REC
+
     k_work_schedule(&workq, K_MSEC(100));
 }
 
@@ -299,22 +325,19 @@ static void dsp_tone_gen(int32_t *sample)
  */
 static void dsp_rec(int32_t *sample, int size)
 {
-    static int id = 0; 
+    static int id = 0;
 
 #if (TEST_REC)
     if ((audio_effects_handler.rec_set.track1 == REC_START))
     {
-        if (id < id_limit)
-        {
-            mem_address[mem_id] = veeprom_write(sample, size);
-            mem_id++;
-        }
+        mem_address[mem_id] = veeprom_write(sample, size);
+        mem_id++;
     }
     else if (audio_effects_handler.rec_set.track1 == REC_RUN)
     {
         if (id < mem_id)
         {
-            storage_read(id, sample, size);
+            veeprom_read(mem_address[id], sample, size);
             id++;
         }
     }
@@ -401,7 +424,11 @@ static int audio_init(void)
  */
 static void data_elab(int32_t *pmem, uint32_t block_size)
 {
+    static int id = 0;
     int size = block_size / sizeof(int32_t);
+#if (TEST_REC)
+    static int rec_offset = 0;
+#endif // TEST_REC
 
 #if (ENABLE_SIGNAL_GEN)
     for (int i = 0; i < size - 1; i += 2)
@@ -415,12 +442,14 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     }
 #else
 #if (TEST_REC)
-    if (audio_effects_handler.rec_set.EnDis > 0)
+    if(audio_effects_handler.rec_set.EnDis > 0)
     {
-        debug_dsp_rec_start_ms = k_uptime_get();
-        dsp_rec(pmem, size);
-        debug_dsp_rec_end_ms = k_uptime_get();
-        debug_dsp_rec_elapsed_ms = debug_dsp_rec_end_ms - debug_dsp_rec_start_ms;
+        if ((audio_effects_handler.rec_set.track1 == REC_RUN) && (id < 40))
+        {
+            veeprom_read(mem_address[id], pmem, 8800);
+            id += 4;
+            return;
+        }
     }
 #endif // TEST_REC
 
@@ -448,7 +477,28 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
         {
             dsp_adt(&pmem[i]);
         }
+#if (TEST_REC)
+        if ((audio_effects_handler.rec_set.EnDis > 0) && (rec_data_index < 40000))
+        {
+            if (audio_effects_handler.rec_set.track1 == REC_START)
+            {
+                if (i % 2 == 0)
+                {
+                    rec_data_index = (rec_offset + i / 2);
+                    rec_data[rec_data_index] = (int16_t)(pmem[i] >> 16);
+                }
+            }
+        }
+#endif // TEST_REC
     }
+
+#if (TEST_REC)
+    if (audio_effects_handler.rec_set.track1 == REC_START && (rec_data_index < 40000))
+    {
+        rec_offset += rec_data_index;
+    }
+#endif // TEST_REC
+
 #endif // ENABLE_SIGNAL_GEN
 }
 
