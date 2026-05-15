@@ -42,7 +42,10 @@ void veeprom_init(void)
      * NOTE: This is necessary to avoid data corruption when writing to flash,
      * as flash_write can only change bits from 1 to 0, and not from 0 to 1.
      */
-    flash_erase(flash_dev, flash_offset, VEEPROM_SECTOR_SIZE * VEEPROM_SECTOR_COUNT);
+    for (int i = 0; i < VEEPROM_SECTOR_COUNT; ++i)
+    {
+        flash_erase(flash_dev, flash_offset + (i * VEEPROM_SECTOR_SIZE), VEEPROM_SECTOR_SIZE);
+    }
 }
 
 /**
@@ -52,7 +55,7 @@ void veeprom_init(void)
  * @param size
  * @return int
  */
-int veeprom_write(const int32_t *data, int size)
+int veeprom_write(const int16_t *data, int size)
 {
     static int new_start_address = 0;
     int address = new_start_address;
