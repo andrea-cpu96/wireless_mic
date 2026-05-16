@@ -69,11 +69,11 @@ static void extract_mac(const char *input, struct bluetooth_peers *peer);
 
 /**
  * @brief bluetooth_drv_config
- * 
- * @param uart 
- * @param cb 
- * @param txrx_config 
- * @return int 
+ *
+ * @param uart
+ * @param cb
+ * @param txrx_config
+ * @return int
  */
 int bluetooth_drv_config(const struct device *uart, bt1036c_peers_cb cb, const uint8_t txrx_config)
 {
@@ -127,13 +127,13 @@ int bluetooth_drv_config(const struct device *uart, bt1036c_peers_cb cb, const u
 
     bluetooth_drv_at_send("REBOOT"); // Reboot to make changes effective
     k_sleep(K_MSEC(1000));
-/*
-    if (bluetooth_drv_handler.bluetooth_drv_status.name[0] == '\0')
-    {
-        printk("BT module not found on UART\n");
-        return -1;
-    }
-*/
+    /*
+        if (bluetooth_drv_handler.bluetooth_drv_status.name[0] == '\0')
+        {
+            printk("BT module not found on UART\n");
+            return -1;
+        }
+    */
     if (txrx_config != BT103036C_CONFIG_RX)
     {
         bluetooth_drv_at_send("SCAN=1"); // Scan advertised MAC addresses
@@ -228,20 +228,11 @@ static void bluetooth_drv_decode_thread(void *a, void *b, void *c)
             }
             else // No \r\n sequence, data corrupted
             {
-                // Search for \r\n sequence in the remaining buffer
-                while ((cmd_buff_rx[decode_idx] != '\r') || (cmd_buff_rx[next] != '\n'))
-                {
-                    if (next != rx_buff_idx)
-                    {
-                        decode_idx = next;
-                        next = ((decode_idx + 1) % RX_BUFF_SIZE);
-                    }
-                    else
-                    {
-                        // End of the buffer reached
-                        break;
-                    }
-                }
+                // Reset the buffer indexes to avoid blocking the decoding thread in case of corrupted data
+                memset(cmd_buff_rx, 0, RX_BUFF_SIZE);
+                rx_buff_idx = 0;
+                next = 0;
+                decode_idx = 0;
             }
         }
         // Enable UART interrupt and wait for data to accumulate

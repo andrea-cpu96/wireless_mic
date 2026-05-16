@@ -58,6 +58,16 @@ struct bluetooth_peers_struct bluetooth_peers_handler = {
 
 static int64_t display_stb_timer = 0;
 
+#if (TEST_REC)
+volatile int16_t rec_data[44100] = {0};
+volatile int rec_data_index = 0;
+volatile uint32_t mem_address[40] = {0};
+volatile int mem_id = 0;
+// volatile int64_t debug_dsp_rec_start_ms = 0;
+// volatile int64_t debug_dsp_rec_end_ms = 0;
+// volatile int64_t debug_dsp_rec_elapsed_ms = 0;
+#endif // TEST_REC
+
 // I2S data structures
 const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
 
@@ -69,11 +79,6 @@ const struct device *i2c1_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
 // Audio effects data structures
 static audio_effects_handler_t audio_effects_handler;
-
-#if (TEST_REC)
-volatile int16_t rec_data[50000] = {0};
-volatile int rec_data_index = 0;
-#endif // TEST_REC
 
 static void workq_100ms(struct k_work *work);
 
@@ -100,13 +105,6 @@ static uint16_t bt_peer_select(const struct bluetooth_peers *peers, const int16_
 static void display_stb(void);
 
 static void system_fault_handler(void);
-
-volatile uint32_t mem_address[40] = {0};
-volatile uint8_t mem_id = 0;
-volatile int id = 0;
-volatile int64_t debug_dsp_rec_start_ms = 0;
-volatile int64_t debug_dsp_rec_end_ms = 0;
-volatile int64_t debug_dsp_rec_elapsed_ms = 0;
 
 K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 
@@ -168,11 +166,6 @@ int main(void)
  */
 static void workq_100ms(struct k_work *work)
 {
-#if (TEST_REC)
-    static uint8_t first = 1;
-    static int id = 0;
-#endif // TEST_REC
-
     // ADT init
     if (audio_effects_handler.adt_set.EnDis > 0)
     {
@@ -186,22 +179,19 @@ static void workq_100ms(struct k_work *work)
     display_stb();
 
 #if (TEST_REC)
-    if (rec_data_index >= 40000)
+    /*
+     * 44100 samples = 88200 Bytes = 1S
+     * 1100 samples = 2200 Bytes about 25ms
+     *
+     * It will take about 4s to save 1s recording
+     */
+    if (audio_effects_handler.rec_set.EnDis > 0)
     {
-        if (first)
+        if ((mem_id < 40) &&
+            (audio_effects_handler.rec_set.track1 == REC_READY))
         {
-            if (id < 40)
-            {
-                debug_dsp_rec_start_ms = k_uptime_get();
-                mem_address[id] = veeprom_write(rec_data, 2200);
-                debug_dsp_rec_end_ms = k_uptime_get();
-                debug_dsp_rec_elapsed_ms = debug_dsp_rec_end_ms - debug_dsp_rec_start_ms;
-                id++;
-            }
-            else
-            {
-                first = 0;
-            }
+            mem_address[mem_id] = veeprom_write(rec_data, 2200);
+            mem_id++;
         }
     }
 #endif // TEST_REC
@@ -325,23 +315,6 @@ static void dsp_tone_gen(int32_t *sample)
  */
 static void dsp_rec(int32_t *sample, int size)
 {
-    static int id = 0;
-
-#if (TEST_REC)
-    if ((audio_effects_handler.rec_set.track1 == REC_START))
-    {
-        mem_address[mem_id] = veeprom_write(sample, size);
-        mem_id++;
-    }
-    else if (audio_effects_handler.rec_set.track1 == REC_RUN)
-    {
-        if (id < mem_id)
-        {
-            veeprom_read(mem_address[id], sample, size);
-            id++;
-        }
-    }
-#endif // TEST_REC
 }
 
 /**
@@ -424,14 +397,17 @@ static int audio_init(void)
  */
 static void data_elab(int32_t *pmem, uint32_t block_size)
 {
-    static int id = 0;
-    int size = block_size / sizeof(int32_t);
 #if (TEST_REC)
-    static int rec_offset = 0;
+    static int rec_data_index = 0;
+    static int id = 0;
+    static int first = 1;
 #endif // TEST_REC
 
+    int samples_2ch_num = (block_size / sizeof(int32_t)); // Number of 32 bits samples in 2 channels
+    int size_16b_1ch = (block_size / 2);                  // Size of 1 channel 16 bits per sample
+
 #if (ENABLE_SIGNAL_GEN)
-    for (int i = 0; i < size - 1; i += 2)
+    for (int i = 0; i < samples_2ch_num - 1; i += 2)
     {
         pmem[i] = (int32_t)(signals_get_sample() * (float32_t)22767); // Conversion from float32 (range -1.0 to 1.0) to int16
         pmem[i] = (pmem[i] << 16);                                    // Shift to upper 16 bits (according to bluetooth module data format)
@@ -441,20 +417,41 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif // ENABLE_DSP_FILTER
     }
 #else
-#if (TEST_REC)
-    if(audio_effects_handler.rec_set.EnDis > 0)
+
+    if (first && (audio_effects_handler.rec_set.EnDis > 0))
     {
-        if ((audio_effects_handler.rec_set.track1 == REC_RUN) && (id < 40))
+        if ((id < mem_id) && 
+            (audio_effects_handler.rec_set.track1 == REC_RUN))
         {
-            veeprom_read(mem_address[id], pmem, 8800);
-            id += 4;
-            return;
+            memset((int16_t *)rec_data, 0, 4400); // Clear the recording buffer before writing new data
+            veeprom_read(mem_address[id], rec_data, 4400);
+            id += 2;
+        }
+        else if (id >= mem_id)
+        {
+            id = 0;
+            first = 0;
         }
     }
+
+    for (int i = 0; i < samples_2ch_num - 1; i += 2)
+    {
+#if (TEST_REC)
+        if ((id < 44100) &&
+            audio_effects_handler.rec_set.track1 == REC_RUN)
+        {
+            pmem[i] = (rec_data[id] << 16);
+            pmem[i + 1] = pmem[i];
+            id++;
+            continue;
+        }
+        else if (id >= 44100)
+        {
+            id = 0;
+            return;
+        }
 #endif // TEST_REC
 
-    for (int i = 0; i < size - 1; i += 2)
-    {
         if (audio_effects_handler.tone_set.EnDis > 0)
         {
             dsp_tone_gen(&pmem[i]);
@@ -466,7 +463,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
             dsp_amplifier(&pmem[i + 1]);
         }
 #if (ENABLE_STEREO_DIFF)
-        int32_t diff = pmem[i + 1] - pmem[i]; // right - left
+        int32_t diff = (pmem[i + 1] - pmem[i]); // right - left
         pmem[i] = diff;
         pmem[i + 1] = diff;
 #endif // ENABLE_STEREO_DIFF
@@ -478,27 +475,17 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
             dsp_adt(&pmem[i]);
         }
 #if (TEST_REC)
-        if ((audio_effects_handler.rec_set.EnDis > 0) && (rec_data_index < 40000))
+        if ((audio_effects_handler.rec_set.EnDis > 0))
         {
-            if (audio_effects_handler.rec_set.track1 == REC_START)
+            if ((rec_data_index < 44100) &&
+                (audio_effects_handler.rec_set.track1 == REC_START))
             {
-                if (i % 2 == 0)
-                {
-                    rec_data_index = (rec_offset + i / 2);
-                    rec_data[rec_data_index] = (int16_t)(pmem[i] >> 16);
-                }
+                rec_data[rec_data_index] = (int16_t)(pmem[i] >> 16);
+                rec_data_index++;
             }
         }
 #endif // TEST_REC
     }
-
-#if (TEST_REC)
-    if (audio_effects_handler.rec_set.track1 == REC_START && (rec_data_index < 40000))
-    {
-        rec_offset += rec_data_index;
-    }
-#endif // TEST_REC
-
 #endif // ENABLE_SIGNAL_GEN
 }
 
