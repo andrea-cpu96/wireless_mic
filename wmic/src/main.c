@@ -40,6 +40,14 @@
 #endif // ENABLE_DSP_FILTER
 #include "adt.h"
 
+#define WORKQ_PERIOD_MS 100
+
+#define SAMPLES_IN_1S 44100
+#define SAMPLES_IN_25MS 1100
+
+#define ADDRESSES_IN_1S (SAMPLES_IN_1S / SAMPLES_IN_25MS)
+#define WORQ_CYCLES_1S_REC ADDRESSES_IN_1S
+
 const float max = MAX_LIMIT;
 const float min = MIN_LIMIT;
 
@@ -59,13 +67,10 @@ struct bluetooth_peers_struct bluetooth_peers_handler = {
 static int64_t display_stb_timer = 0;
 
 #if (TEST_REC)
-volatile int16_t rec_data[44100] = {0};
-volatile int rec_data_index = 0;
-volatile uint32_t mem_address[40] = {0};
-volatile int mem_id = 0;
-// volatile int64_t debug_dsp_rec_start_ms = 0;
-// volatile int64_t debug_dsp_rec_end_ms = 0;
-// volatile int64_t debug_dsp_rec_elapsed_ms = 0;
+int16_t rec_data[SAMPLES_IN_1S] = {0};
+int rec_data_index = 0;
+uint32_t mem_address[ADDRESSES_IN_1S] = {0};
+int mem_id = 0;
 #endif // TEST_REC
 
 // I2S data structures
@@ -172,10 +177,13 @@ static void workq_100ms(struct k_work *work)
         dsp_adt_init();
     }
 
+    // Inputs handler
     inputs_handler_cb();
+
     // Pages handler
     page_handler();
 
+    // Display standby after long inactivity
     display_stb();
 
 #if (TEST_REC)
@@ -187,16 +195,16 @@ static void workq_100ms(struct k_work *work)
      */
     if (audio_effects_handler.rec_set.EnDis > 0)
     {
-        if ((mem_id < 40) &&
+        if ((mem_id < WORQ_CYCLES_1S_REC) &&
             (audio_effects_handler.rec_set.track1 == REC_READY))
         {
-            mem_address[mem_id] = veeprom_write(rec_data, 2200);
+            mem_address[mem_id] = veeprom_write(rec_data, (SAMPLES_IN_25MS * sizeof(int16_t)));
             mem_id++;
         }
     }
 #endif // TEST_REC
 
-    k_work_schedule(&workq, K_MSEC(100));
+    k_work_schedule(&workq, K_MSEC(WORKQ_PERIOD_MS));
 }
 
 #if (ENABLE_DSP_FILTER)
@@ -420,7 +428,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 
     if (first && (audio_effects_handler.rec_set.EnDis > 0))
     {
-        if ((id < mem_id) && 
+        if ((id < mem_id) &&
             (audio_effects_handler.rec_set.track1 == REC_RUN))
         {
             memset((int16_t *)rec_data, 0, 4400); // Clear the recording buffer before writing new data
@@ -437,7 +445,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
     for (int i = 0; i < samples_2ch_num - 1; i += 2)
     {
 #if (TEST_REC)
-        if ((id < 44100) &&
+        if ((id < SAMPLES_IN_1S) &&
             audio_effects_handler.rec_set.track1 == REC_RUN)
         {
             pmem[i] = (rec_data[id] << 16);
@@ -445,7 +453,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
             id++;
             continue;
         }
-        else if (id >= 44100)
+        else if (id >= SAMPLES_IN_1S)
         {
             id = 0;
             return;
@@ -477,7 +485,7 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #if (TEST_REC)
         if ((audio_effects_handler.rec_set.EnDis > 0))
         {
-            if ((rec_data_index < 44100) &&
+            if ((rec_data_index < SAMPLES_IN_1S) &&
                 (audio_effects_handler.rec_set.track1 == REC_START))
             {
                 rec_data[rec_data_index] = (int16_t)(pmem[i] >> 16);

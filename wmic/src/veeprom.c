@@ -55,7 +55,7 @@ void veeprom_init(void)
  * @param size
  * @return int
  */
-int veeprom_write(const int16_t *data, int size)
+int veeprom_write(const void *data, int size)
 {
     static int new_start_address = 0;
     int address = new_start_address;
@@ -75,7 +75,7 @@ int veeprom_write(const int16_t *data, int size)
  * @param data
  * @param size
  */
-void veeprom_read(int address, int32_t *data, int size)
+void veeprom_read(int address, void *data, int size)
 {
     flash_read(flash_dev, flash_offset + address, data, size);
 }
