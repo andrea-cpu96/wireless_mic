@@ -75,7 +75,7 @@ int veeprom_write(const void *data, int size)
  * @param data
  * @param size
  */
-void veeprom_read(int address, void *data, int size)
+void veeprom_read(uint32_t address, void *data, int size)
 {
     flash_read(flash_dev, flash_offset + address, data, size);
 }

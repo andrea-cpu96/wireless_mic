@@ -47,7 +47,7 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
  * @param peers_handler
  */
 void pages_peers_page(enum buttons_status_e button_status,
-											struct bluetooth_peers_struct *peers_handler)
+					  struct bluetooth_peers_struct *peers_handler)
 {
 	uint8_t display_flag = 0;
 
@@ -85,7 +85,7 @@ void pages_peers_page(enum buttons_status_e button_status,
  * @param adt_set
  */
 void pages_adt_page(enum buttons_status_e button_status,
-										struct adt_settings *adt_set)
+					struct adt_settings *adt_set)
 {
 	uint8_t display_flag = 0;
 
@@ -138,7 +138,7 @@ void pages_adt_page(enum buttons_status_e button_status,
  * @param tone_set
  */
 void pages_tones_page(enum buttons_status_e button_status,
-											struct tone_settings *tone_set)
+					  struct tone_settings *tone_set)
 {
 	static enum tone_e tone_previous = TONE_NONE;
 
@@ -232,7 +232,6 @@ void pages_rec_page(enum buttons_status_e button_status, struct rec_settings *re
 	{
 		if (button_status != button_previous)
 		{
-			button_previous = button_status;
 			if (button_status == BUTTON_RIGHT)
 			{
 				if (rec_set->track1 == REC_NONE)
@@ -246,15 +245,40 @@ void pages_rec_page(enum buttons_status_e button_status, struct rec_settings *re
 				display_flag = 1;
 			}
 
-			if (button_status == BUTTON_NONE)
+			if (button_status == BUTTON_LEFT)
 			{
-				if ((rec_set->track1 == REC_START) ||
-						(rec_set->track1 == REC_RUN))
+				if (rec_set->track2 == REC_NONE)
 				{
-					rec_set->track1 = REC_READY;
+					rec_set->track2 = REC_START;
+				}
+				else if (rec_set->track2 == REC_READY)
+				{
+					rec_set->track2 = REC_RUN;
 				}
 				display_flag = 1;
 			}
+
+			if (button_status == BUTTON_NONE)
+			{
+				if (button_previous == BUTTON_RIGHT)
+				{
+					if ((rec_set->track1 == REC_START) ||
+						(rec_set->track1 == REC_RUN))
+					{
+						rec_set->track1 = REC_READY;
+					}
+				}
+				else if (button_previous == BUTTON_LEFT)
+				{
+					if ((rec_set->track2 == REC_START) ||
+						(rec_set->track2 == REC_RUN))
+					{
+						rec_set->track2 = REC_READY;
+					}
+				}
+				display_flag = 1;
+			}
+			button_previous = button_status;
 		}
 	}
 	if (button_status == BUTTON_SET)
@@ -268,7 +292,7 @@ void pages_rec_page(enum buttons_status_e button_status, struct rec_settings *re
 		strcpy(page.title, "REC");
 
 		page.EnDis = rec_set->EnDis;
-		
+
 		strcpy(page.par[0].title, "TRK1;");
 		strcpy(page.par[1].title, "TRK2;");
 		strcpy(page.par[2].title, "TRK3;");
