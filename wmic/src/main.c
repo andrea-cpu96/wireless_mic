@@ -40,6 +40,13 @@
 #endif // ENABLE_DSP_FILTER
 #include "adt.h"
 
+enum mem_action_e
+{
+    BUFFER_WRITE,
+    MEM_WRITE,
+    MEM_READ,
+};
+
 #define WORKQ_PERIOD_MS 100
 
 #define SAMPLES_IN_1S 44100
@@ -67,12 +74,20 @@ struct bluetooth_peers_struct bluetooth_peers_handler = {
 static int64_t display_stb_timer = 0;
 
 #if (TEST_REC)
+struct rec_track_struct
+{
+    uint32_t mem_address[ADDRESSES_IN_1S];
+    int mem_id;
+    int16_t *data_store;
+    enum rec_status_e *status;
+};
+
+struct rec_track_struct rec_track[4] = {0};
+#endif // TEST_REC
+
+#if (TEST_REC)
 int16_t rec_data[SAMPLES_IN_1S] = {0};
 int rec_data_index = 0;
-uint32_t mem_address_track1[ADDRESSES_IN_1S] = {0};
-uint32_t mem_address_track2[ADDRESSES_IN_1S] = {0};
-int mem_id_track1 = 0;
-int mem_id_track2 = 0;
 volatile int16_t rec_sample = 0;
 #endif // TEST_REC
 
@@ -100,7 +115,8 @@ static void dsp_filter(int32_t *sample);
 static void dsp_adt_init(void);
 static void dsp_adt(int32_t *sample);
 static void dsp_tone_gen(int32_t *sample);
-static void dsp_rec(int32_t *sample, int size);
+static void dsp_rec_init(void);
+static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action);
 static void dsp_amplifier(int32_t *sample);
 
 static int gpios_init(void);
@@ -122,6 +138,10 @@ K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 int main(void)
 {
     veeprom_init();
+
+#if (TEST_REC)
+    dsp_rec_init();
+#endif // TEST_REC
 
     // Filter init
 #if (ENABLE_DSP_FILTER)
@@ -177,9 +197,6 @@ int main(void)
  */
 static void workq_100ms(struct k_work *work)
 {
-    static int16_t *rec_data_store1 = rec_data;
-    static int16_t *rec_data_store2 = rec_data;
-
     // ADT init
     if (audio_effects_handler.adt_set.EnDis > 0)
     {
@@ -204,20 +221,7 @@ static void workq_100ms(struct k_work *work)
      */
     if (audio_effects_handler.rec_set.EnDis > 0)
     {
-        if ((mem_id_track1 < WORQ_CYCLES_1S_REC) &&
-            (audio_effects_handler.rec_set.track1 == REC_READY))
-        {
-            mem_address_track1[mem_id_track1] = veeprom_write(rec_data_store1, (SAMPLES_IN_25MS * sizeof(int16_t)));
-            mem_id_track1++;
-            rec_data_store1 = (rec_data_store1 + SAMPLES_IN_25MS);
-        }
-        else if ((mem_id_track2 < WORQ_CYCLES_1S_REC) &&
-                 (audio_effects_handler.rec_set.track2 == REC_READY))
-        {
-            mem_address_track2[mem_id_track2] = veeprom_write(rec_data_store2, (SAMPLES_IN_25MS * sizeof(int16_t)));
-            mem_id_track2++;
-            rec_data_store2 = (rec_data_store2 + SAMPLES_IN_25MS);
-        }
+        dsp_rec(NULL, SAMPLES_IN_25MS * sizeof(int16_t), MEM_WRITE);
     }
 #endif // TEST_REC
 
@@ -333,13 +337,91 @@ static void dsp_tone_gen(int32_t *sample)
 }
 
 /**
+ * @brief dsp_rec_init
+ */
+static void dsp_rec_init(void)
+{
+    rec_track[0] = (struct rec_track_struct){
+        .mem_address = {0},
+        .mem_id = 0,
+        .data_store = rec_data,
+        .status = &audio_effects_handler.rec_set.track1};
+
+    rec_track[1] = (struct rec_track_struct){
+        .mem_address = {0},
+        .mem_id = 0,
+        .data_store = rec_data,
+        .status = &audio_effects_handler.rec_set.track2};
+}
+
+/**
  * @brief dsp_rec
  *
  * @param sample
  * @param size
+ * @param action
  */
-static void dsp_rec(int32_t *sample, int size)
+static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action)
 {
+    uint32_t samples_num = (size_bytes / sizeof(int16_t)); // Number of 16 bits samples in the block
+    
+    if (action == MEM_WRITE)
+    {
+        if ((rec_track[0].mem_id < WORQ_CYCLES_1S_REC) &&
+            (*(rec_track[0].status) == REC_READY))
+        {
+            rec_track[0].mem_address[rec_track[0].mem_id] = veeprom_write(rec_track[0].data_store, size_bytes);
+            rec_track[0].mem_id++;
+            rec_track[0].data_store = (rec_track[0].data_store + samples_num);
+        }
+
+        else if ((rec_track[1].mem_id < WORQ_CYCLES_1S_REC) &&
+                 (*(rec_track[1].status) == REC_READY))
+        {
+            rec_track[1].mem_address[rec_track[1].mem_id] = veeprom_write(rec_track[1].data_store, size_bytes);
+            rec_track[1].mem_id++;
+            rec_track[1].data_store = (rec_track[1].data_store + samples_num);
+        }
+    }
+    else if (action == MEM_READ)
+    {
+        if ((rec_data_index < SAMPLES_IN_1S) &&
+            (*(rec_track[0].status) == REC_RUN))
+        {
+            veeprom_read(rec_track[0].mem_address[0] + rec_data_index * size_bytes, &rec_sample, size_bytes);
+            ((int32_t *)sample)[0] = (rec_sample << 16);
+            ((int32_t *)sample)[1] = -((int32_t *)sample)[0];
+            rec_data_index++;
+        }
+        else if ((rec_data_index < SAMPLES_IN_1S) &&
+                 (*(rec_track[1].status) == REC_RUN))
+        {
+            veeprom_read(rec_track[1].mem_address[0] + rec_data_index * size_bytes, &rec_sample, size_bytes);
+            ((int32_t *)sample)[0] = (rec_sample << 16);
+            ((int32_t *)sample)[1] = -((int32_t *)sample)[0];
+            rec_data_index++;
+        }
+        else if (rec_data_index >= SAMPLES_IN_1S)
+        {
+            rec_data_index = 0;
+            return;
+        }
+    }
+    else if (action == BUFFER_WRITE)
+    {
+        if ((rec_data_index < SAMPLES_IN_1S) &&
+            (*(rec_track[0].status) == REC_START))
+        {
+            rec_data[rec_data_index] = (int16_t)(((int32_t *)sample)[0] >> 16);
+            rec_data_index++;
+        }
+        else if ((rec_data_index < SAMPLES_IN_1S) &&
+                 (*(rec_track[1].status) == REC_START))
+        {
+            rec_data[rec_data_index] = (int16_t)(((int32_t *)sample)[0] >> 16);
+            rec_data_index++;
+        }
+    }
 }
 
 /**
@@ -422,14 +504,7 @@ static int audio_init(void)
  */
 static void data_elab(int32_t *pmem, uint32_t block_size)
 {
-#if (TEST_REC)
-    static int id = 0;
-    static int first1 = 1;
-    static int first2 = 1;
-#endif // TEST_REC
-
     int samples_2ch_num = (block_size / sizeof(int32_t)); // Number of 32 bits samples in 2 channels
-    int size_16b_1ch = (block_size / 2);                  // Size of 1 channel 16 bits per sample
 
 #if (ENABLE_SIGNAL_GEN)
     for (int i = 0; i < samples_2ch_num - 1; i += 2)
@@ -442,69 +517,11 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #endif // ENABLE_DSP_FILTER
     }
 #else
-/*
-    if (first1 && (audio_effects_handler.rec_set.EnDis > 0) &&
-        (audio_effects_handler.rec_set.track1 == REC_RUN))
-    {
-        first2 = 1;
-        if ((id < mem_id_track1) &&
-            (audio_effects_handler.rec_set.track1 == REC_RUN))
-        {
-            memset((int16_t *)(rec_data+id*2200), 0, 4400); // Clear the recording buffer before writing new data
-            veeprom_read(mem_address_track1[id], (rec_data+id*2200), 4400);
-            id += 2;
-        }
-        else if (id >= mem_id_track1)
-        {
-            id = 0;
-            first1 = 0;
-        }
-    }
-    if (first2 && (audio_effects_handler.rec_set.EnDis > 0) &&
-        (audio_effects_handler.rec_set.track2 == REC_RUN))
-    {
-        first1 = 1;
-        if ((id < mem_id_track2) &&
-            (audio_effects_handler.rec_set.track2 == REC_RUN))
-        {
-            memset((int16_t *)(rec_data+id*2200), 0, 4400); // Clear the recording buffer before writing new data
-            veeprom_read(mem_address_track2[id], (rec_data+id*2200), 4400);
-            id += 2;
-        }
-        else if (id >= mem_id_track2)
-        {
-            id = 0;
-            first2 = 0;
-        }
-    }
-*/
-
     for (int i = 0; i < samples_2ch_num - 1; i += 2)
     {
 #if (TEST_REC)
-        if ((rec_data_index < SAMPLES_IN_1S) &&
-            audio_effects_handler.rec_set.track1 == REC_RUN)
-        {
-            veeprom_read(mem_address_track1[0] + rec_data_index*sizeof(int16_t), &rec_sample, sizeof(int16_t));
-            pmem[i] = (rec_sample << 16);
-            pmem[i + 1] = pmem[i];
-            rec_data_index++;
-            continue;
-        }
-        else if ((rec_data_index < SAMPLES_IN_1S) &&
-                 audio_effects_handler.rec_set.track2 == REC_RUN)
-        {
-            veeprom_read(mem_address_track2[0]+rec_data_index*sizeof(int16_t), &rec_sample, sizeof(int16_t));
-            pmem[i] = (rec_sample << 16);
-            pmem[i + 1] = pmem[i];
-            rec_data_index++;
-            continue;
-        }
-        else if (rec_data_index >= SAMPLES_IN_1S)
-        {
-            rec_data_index = 0;
-            return;
-        }
+        // Read the sample from the recording buffer and save it into the sample to be processed
+        dsp_rec(&pmem[i], sizeof(int16_t), MEM_READ);
 #endif // TEST_REC
 
         if (audio_effects_handler.tone_set.EnDis > 0)
@@ -532,18 +549,8 @@ static void data_elab(int32_t *pmem, uint32_t block_size)
 #if (TEST_REC)
         if ((audio_effects_handler.rec_set.EnDis > 0))
         {
-            if ((rec_data_index < SAMPLES_IN_1S) &&
-                (audio_effects_handler.rec_set.track1 == REC_START))
-            {
-                rec_data[rec_data_index] = (int16_t)(pmem[i] >> 16);
-                rec_data_index++;
-            }
-            else if ((rec_data_index < SAMPLES_IN_1S) &&
-                     (audio_effects_handler.rec_set.track2 == REC_START))
-            {
-                rec_data[rec_data_index] = (int16_t)(pmem[i] >> 16);
-                rec_data_index++;
-            }
+            // Save the sample into the recording buffer
+            dsp_rec(&pmem[i], sizeof(int16_t), BUFFER_WRITE);
         }
 #endif // TEST_REC
     }
