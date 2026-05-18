@@ -85,7 +85,8 @@ static struct rec_track_struct rec_track[TRACK_RECORD_NUM] = {0};
 static enum rec_track_id track_id_current = TRACK1;
 
 static int16_t rec_data[SAMPLES_IN_1S] = {0};
-static int rec_data_index = 0;
+static int rec_data_index_read = 0;
+static int rec_data_index_write = 0;
 static int16_t rec_sample = 0;
 #endif // TEST_REC
 
@@ -375,29 +376,35 @@ static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action)
     }
     else if (action == MEM_READ)
     {
-        if ((rec_data_index < SAMPLES_IN_1S) &&
+        if ((rec_data_index_read < SAMPLES_IN_1S) &&
             (*(rec_track[track_id_current].status) == REC_RUN))
         {
-            veeprom_read(rec_track[track_id_current].mem_address[0] + rec_data_index * size_bytes, &rec_sample, size_bytes);
-            ((int32_t *)sample)[0] = (rec_sample << 16);
+            veeprom_read(rec_track[track_id_current].mem_address[0] + rec_data_index_read * size_bytes, &rec_sample, size_bytes);
+            ((int32_t *)sample)[0] = (rec_sample << 14);
             ((int32_t *)sample)[1] = -((int32_t *)sample)[0];
-            rec_data_index++;
+            rec_data_index_read++;
         }
-        else if (rec_data_index >= SAMPLES_IN_1S)
+        else if (rec_data_index_read >= SAMPLES_IN_1S)
         {
-            rec_data_index = 0;
+            rec_data_index_read = 0;
             return;
         }
     }
     else if (action == BUFFER_WRITE)
     {
-        if ((rec_data_index < SAMPLES_IN_1S) &&
+        if ((rec_data_index_write < SAMPLES_IN_1S) &&
             (*(rec_track[track_id_current].status) == REC_START))
         {
-            rec_data[rec_data_index] = (int16_t)(((int32_t *)sample)[0] >> 16);
-            rec_data_index++;
+            rec_data[rec_data_index_write] = (int16_t)(((int32_t *)sample)[0] >> 16);
+            rec_data_index_write++;
+        }
+        else
+        {
+            rec_data_index_write = 0;
+            return;
         }
     }
+    
 }
 
 /**
