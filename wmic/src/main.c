@@ -81,14 +81,12 @@ struct rec_track_struct
     int16_t *data_store;
     enum rec_status_e *status;
 };
+static struct rec_track_struct rec_track[TRACK_RECORD_NUM] = {0};
+static enum rec_track_id track_id_current = TRACK1;
 
-struct rec_track_struct rec_track[4] = {0};
-#endif // TEST_REC
-
-#if (TEST_REC)
-int16_t rec_data[SAMPLES_IN_1S] = {0};
-int rec_data_index = 0;
-volatile int16_t rec_sample = 0;
+static int16_t rec_data[SAMPLES_IN_1S] = {0};
+static int rec_data_index = 0;
+static int16_t rec_sample = 0;
 #endif // TEST_REC
 
 // I2S data structures
@@ -364,39 +362,23 @@ static void dsp_rec_init(void)
 static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action)
 {
     uint32_t samples_num = (size_bytes / sizeof(int16_t)); // Number of 16 bits samples in the block
-    
+
     if (action == MEM_WRITE)
     {
-        if ((rec_track[0].mem_id < WORQ_CYCLES_1S_REC) &&
-            (*(rec_track[0].status) == REC_READY))
+        if ((rec_track[track_id_current].mem_id < WORQ_CYCLES_1S_REC) &&
+            (*(rec_track[track_id_current].status) == REC_READY))
         {
-            rec_track[0].mem_address[rec_track[0].mem_id] = veeprom_write(rec_track[0].data_store, size_bytes);
-            rec_track[0].mem_id++;
-            rec_track[0].data_store = (rec_track[0].data_store + samples_num);
-        }
-
-        else if ((rec_track[1].mem_id < WORQ_CYCLES_1S_REC) &&
-                 (*(rec_track[1].status) == REC_READY))
-        {
-            rec_track[1].mem_address[rec_track[1].mem_id] = veeprom_write(rec_track[1].data_store, size_bytes);
-            rec_track[1].mem_id++;
-            rec_track[1].data_store = (rec_track[1].data_store + samples_num);
+            rec_track[track_id_current].mem_address[rec_track[track_id_current].mem_id] = veeprom_write(rec_track[track_id_current].data_store, size_bytes);
+            rec_track[track_id_current].mem_id++;
+            rec_track[track_id_current].data_store = (rec_track[track_id_current].data_store + samples_num);
         }
     }
     else if (action == MEM_READ)
     {
         if ((rec_data_index < SAMPLES_IN_1S) &&
-            (*(rec_track[0].status) == REC_RUN))
+            (*(rec_track[track_id_current].status) == REC_RUN))
         {
-            veeprom_read(rec_track[0].mem_address[0] + rec_data_index * size_bytes, &rec_sample, size_bytes);
-            ((int32_t *)sample)[0] = (rec_sample << 16);
-            ((int32_t *)sample)[1] = -((int32_t *)sample)[0];
-            rec_data_index++;
-        }
-        else if ((rec_data_index < SAMPLES_IN_1S) &&
-                 (*(rec_track[1].status) == REC_RUN))
-        {
-            veeprom_read(rec_track[1].mem_address[0] + rec_data_index * size_bytes, &rec_sample, size_bytes);
+            veeprom_read(rec_track[track_id_current].mem_address[0] + rec_data_index * size_bytes, &rec_sample, size_bytes);
             ((int32_t *)sample)[0] = (rec_sample << 16);
             ((int32_t *)sample)[1] = -((int32_t *)sample)[0];
             rec_data_index++;
@@ -410,13 +392,7 @@ static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action)
     else if (action == BUFFER_WRITE)
     {
         if ((rec_data_index < SAMPLES_IN_1S) &&
-            (*(rec_track[0].status) == REC_START))
-        {
-            rec_data[rec_data_index] = (int16_t)(((int32_t *)sample)[0] >> 16);
-            rec_data_index++;
-        }
-        else if ((rec_data_index < SAMPLES_IN_1S) &&
-                 (*(rec_track[1].status) == REC_START))
+            (*(rec_track[track_id_current].status) == REC_START))
         {
             rec_data[rec_data_index] = (int16_t)(((int32_t *)sample)[0] >> 16);
             rec_data_index++;
@@ -652,7 +628,7 @@ static void page_handler(void)
         pages_tones_page(button_status, &audio_effects_handler.tone_set);
         break;
     case REC_PAGE:
-        pages_rec_page(button_status, &audio_effects_handler.rec_set);
+        track_id_current = pages_rec_page(button_status, &audio_effects_handler.rec_set);
         break;
     default:
         break;

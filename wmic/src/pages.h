@@ -30,6 +30,15 @@ enum rec_status_e
     REC_RUN,
 };
 
+enum rec_track_id
+{
+    TRACK1 = 0,
+    TRACK2,
+    TRACK3,
+    TRACK4,
+    TRACK_RECORD_NUM
+};
+
 // Audio effects data structures
 struct adt_settings
 {
@@ -61,7 +70,7 @@ void pages_demo_page(uint8_t EnDis, uint8_t idx, int v1, int v2, int v3, int v4)
 void pages_peers_page(enum buttons_status_e button_status, struct bluetooth_peers_struct *peers_handler);
 void pages_adt_page(enum buttons_status_e button_status, struct adt_settings *adt_set);
 void pages_tones_page(enum buttons_status_e button_status, struct tone_settings *tone_set);
-void pages_rec_page(enum buttons_status_e button_status, struct rec_settings *rec_set);
+enum rec_track_id pages_rec_page(enum buttons_status_e button_status, struct rec_settings *rec_set);
 void pages_set_current_page(enum pages_e page);
 enum pages_e pages_get_current_page(void);
 
