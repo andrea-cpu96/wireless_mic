@@ -136,6 +136,7 @@ K_WORK_DELAYABLE_DEFINE(workq, workq_100ms);
 
 int main(void)
 {
+    // VEEPROM init
     veeprom_init();
 
 #if (TEST_REC)
@@ -380,11 +381,12 @@ static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action)
             (*(rec_track[track_id_current].status) == REC_RUN))
         {
             veeprom_read(rec_track[track_id_current].mem_address[0] + rec_data_index_read * size_bytes, &rec_sample, size_bytes);
-            ((int32_t *)sample)[0] = (rec_sample << 14);
-            ((int32_t *)sample)[1] = -((int32_t *)sample)[0];
+            ((int32_t *)sample)[0] = (rec_sample << (16 - 2)); // Deamplification of 2 bits
+            ((int32_t *)sample)[1] = 0;
             rec_data_index_read++;
         }
-        else if (rec_data_index_read >= SAMPLES_IN_1S)
+        else if (rec_data_index_read >= SAMPLES_IN_1S ||
+                 *(rec_track[track_id_current].status) != REC_RUN)
         {
             rec_data_index_read = 0;
             return;
@@ -398,13 +400,12 @@ static void dsp_rec(void *sample, int size_bytes, enum mem_action_e action)
             rec_data[rec_data_index_write] = (int16_t)(((int32_t *)sample)[0] >> 16);
             rec_data_index_write++;
         }
-        else
+        else if (*(rec_track[track_id_current].status) != REC_START)
         {
             rec_data_index_write = 0;
             return;
         }
     }
-    
 }
 
 /**
