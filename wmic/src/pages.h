@@ -20,6 +20,12 @@ enum buttons_status_e
     BUTTON_RIGHT,
     BUTTON_LEFT,
     BUTTON_SET,
+    BUTTON_UP,
+    BUTTON_DOWN,
+    BUTTON_USER_1,
+    BUTTON_USER_2,
+    BUTTON_USER_3,
+    BUTTON_USER_4,
 };
 
 enum rec_status_e
