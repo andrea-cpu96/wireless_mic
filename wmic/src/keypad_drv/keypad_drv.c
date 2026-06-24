@@ -51,7 +51,7 @@ int keypad_drv_config(void)
         return -1;
     }
 
-    gpio_port_clear_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], 255);
+    gpio_port_clear_bits_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], ALL_LED);
 
     return 0;
 }
@@ -63,7 +63,18 @@ int keypad_drv_config(void)
  */
 enum buttons_e keypad_drv_btn_read(void)
 {
+    gpio_port_value_t bank_2_state = 0;
+
     gpio_port_get_raw(keypad_drv_handler.pcf[PCF_BTN_BANK_1], &keypad_drv_handler.buttons_state);
+
+    // The first pin of bank 2 is BUTTON_9 (active low, like the other buttons)
+    gpio_port_get_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], &bank_2_state);
+
+    if ((keypad_drv_handler.buttons_state == BUTTON_NO) && ((bank_2_state & BIT(0)) == 0))
+    {
+        return BUTTON_9;
+    }
+
     return (enum buttons_e)keypad_drv_handler.buttons_state;
 }
 
@@ -127,7 +138,10 @@ static int keypad_drv_bank_2_conf(void)
         return -1;
     }
 
-    for (int i = 0; i < KEYPAD_DRV_BTN_NUM; i++)
+    // First pin of bank 2 is a button input, the remaining pins are LED outputs
+    gpio_pin_configure(keypad_drv_handler.pcf[PCF_LED_BANK_1], 0, GPIO_INPUT | GPIO_PULL_UP);
+
+    for (int i = 1; i < KEYPAD_DRV_BTN_NUM; i++)
     {
         gpio_pin_configure(keypad_drv_handler.pcf[PCF_LED_BANK_1], i, GPIO_OUTPUT);
     }

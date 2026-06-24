@@ -596,43 +596,38 @@ static void inputs_handler_cb(void)
     switch (inputs_state)
     {
     case BUTTON_1:
-        keypad_drv_led_set(LED_1);
         button_status = BUTTON_RIGHT;
         break;
     case BUTTON_2:
-        keypad_drv_led_set(LED_2);
         button_status = BUTTON_LEFT;
         break;
     case BUTTON_3:
-        keypad_drv_led_set(LED_3);
         button_status = BUTTON_SET;
         break;
     case BUTTON_4:
-        keypad_drv_led_set(LED_4);
         button_status = BUTTON_UP;
         break;
     case BUTTON_5:
-        keypad_drv_led_set(LED_5);
         button_status = BUTTON_DOWN;
         break;
     case BUTTON_6:
-        keypad_drv_led_set(LED_6);
+        keypad_drv_led_set(LED_4);
         button_status = BUTTON_USER_1;
         break;
     case BUTTON_7:
-        keypad_drv_led_set(LED_7);
+        keypad_drv_led_set(LED_5);
         button_status = BUTTON_USER_2;
         break;
     case BUTTON_8:
-        keypad_drv_led_set(LED_8);
+        keypad_drv_led_set(LED_6);
         button_status = BUTTON_USER_3;
         break;
     case BUTTON_9:
-        keypad_drv_led_set(LED_9);
+        keypad_drv_led_set(LED_7);
         button_status = BUTTON_USER_4;
         break;
     default:
-        keypad_drv_led_clear(255);
+        keypad_drv_led_clear(ALL_LED);
         break;
     }
 }

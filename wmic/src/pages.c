@@ -9,28 +9,9 @@
 #include "signals.h"
 
 static enum pages_e current_page = PEERS_PAGE;
-
 static uint8_t page_changed_flag = 1;
 
-/**
- * @brief switch_page - circular page switch between ADT_PAGE and REC_PAGE
- *
- * @param incDec +1 to go forward, -1 to go backward
- */
-static void switch_page(int8_t incDec)
-{
-    static uint8_t page_num = ADT_PAGE;
-
-    page_num += incDec;
-
-    if (page_num > REC_PAGE)
-        page_num = ADT_PAGE;
-    else if (page_num < ADT_PAGE)
-        page_num = REC_PAGE;
-
-    pages_set_current_page((enum pages_e)page_num);
-    page_changed_flag = 1;
-}
+static void switch_page(int8_t incDec);
 
 /**
  * @brief pages_demo_page
@@ -108,6 +89,7 @@ void pages_adt_page(enum buttons_status_e button_status,
                     struct adt_settings *adt_set)
 {
     static const uint8_t ADT_IDX_NUM = 3;
+    static uint8_t par_edit[ADT_IDX_NUM] = {0};
 
     uint8_t display_flag = 0;
 
@@ -119,7 +101,15 @@ void pages_adt_page(enum buttons_status_e button_status,
 
     if (button_status == BUTTON_RIGHT)
     {
-        if (idx == 0)
+        if (par_edit[idx])
+        {
+            if (idx == 1)
+                adt_set->delay++;
+            else if (idx == 2)
+                adt_set->fading_lev++;
+            display_flag = 1;
+        }
+        else if (idx == 0)
             switch_page(1);
         else
             idx = (idx + 1) % ADT_IDX_NUM;
@@ -127,7 +117,15 @@ void pages_adt_page(enum buttons_status_e button_status,
     }
     else if (button_status == BUTTON_LEFT)
     {
-        if (idx == 0)
+        if (par_edit[idx])
+        {
+            if (idx == 1)
+                adt_set->delay--;
+            else if (idx == 2)
+                adt_set->fading_lev--;
+            display_flag = 1;
+        }
+        else if (idx == 0)
             switch_page(-1);
         else
             idx = (idx == 0) ? (ADT_IDX_NUM - 1) : (idx - 1);
@@ -135,12 +133,28 @@ void pages_adt_page(enum buttons_status_e button_status,
     }
     else if (button_status == BUTTON_UP)
     {
-        idx = (idx + 1) % ADT_IDX_NUM;
+        if (par_edit[idx])
+        {
+            if (idx == 1)
+                adt_set->delay++;
+            else if (idx == 2)
+                adt_set->fading_lev++;
+        }
+        else
+            idx = (idx + 1) % ADT_IDX_NUM;
         display_flag = 1;
     }
     else if (button_status == BUTTON_DOWN)
     {
-        idx = (idx == 0) ? (ADT_IDX_NUM - 1) : (idx - 1);
+        if (par_edit[idx])
+        {
+            if (idx == 1)
+                adt_set->delay--;
+            else if (idx == 2)
+                adt_set->fading_lev--;
+        }
+        else
+            idx = (idx == 0) ? (ADT_IDX_NUM - 1) : (idx - 1);
         display_flag = 1;
     }
     else if (button_status == BUTTON_SET)
@@ -148,6 +162,11 @@ void pages_adt_page(enum buttons_status_e button_status,
         if (idx == 0)
         {
             adt_set->EnDis = !adt_set->EnDis;
+            display_flag = 1;
+        }
+        else
+        {
+            par_edit[idx] = !par_edit[idx];
             display_flag = 1;
         }
     }
@@ -397,4 +416,24 @@ void pages_set_current_page(enum pages_e page)
 enum pages_e pages_get_current_page(void)
 {
     return current_page;
+}
+
+/**
+ * @brief switch_page - circular page switch between ADT_PAGE and REC_PAGE
+ *
+ * @param incDec +1 to go forward, -1 to go backward
+ */
+static void switch_page(int8_t incDec)
+{
+    static uint8_t page_num = ADT_PAGE;
+
+    page_num += incDec;
+
+    if (page_num > REC_PAGE)
+        page_num = ADT_PAGE;
+    else if (page_num < ADT_PAGE)
+        page_num = REC_PAGE;
+
+    pages_set_current_page((enum pages_e)page_num);
+    page_changed_flag = 1;
 }
