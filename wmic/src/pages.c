@@ -8,6 +8,8 @@
 #include "display_drv.h"
 #include "signals.h"
 
+#define ADT_IDX_NUM 3
+
 static enum pages_e current_page = PEERS_PAGE;
 static uint8_t page_changed_flag = 1;
 
@@ -88,7 +90,6 @@ void pages_peers_page(enum buttons_status_e button_status,
 void pages_adt_page(enum buttons_status_e button_status,
                     struct adt_settings *adt_set)
 {
-    static const uint8_t ADT_IDX_NUM = 3;
     static uint8_t par_edit[ADT_IDX_NUM] = {0};
 
     uint8_t display_flag = 0;
