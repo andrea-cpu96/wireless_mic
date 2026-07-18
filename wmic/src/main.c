@@ -611,19 +611,19 @@ static void inputs_handler_cb(void)
         button_status = BUTTON_DOWN;
         break;
     case BUTTON_6:
-        keypad_drv_led_set(LED_4);
+        //keypad_drv_led_set(LED_4);
         button_status = BUTTON_USER_1;
         break;
     case BUTTON_7:
-        keypad_drv_led_set(LED_5);
+        //keypad_drv_led_set(LED_5);
         button_status = BUTTON_USER_2;
         break;
     case BUTTON_8:
-        keypad_drv_led_set(LED_6);
+        //keypad_drv_led_set(LED_6);
         button_status = BUTTON_USER_3;
         break;
     case BUTTON_9:
-        keypad_drv_led_set(LED_7);
+        //keypad_drv_led_set(LED_7);
         button_status = BUTTON_USER_4;
         break;
     default:

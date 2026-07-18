@@ -138,10 +138,15 @@ static int keypad_drv_bank_2_conf(void)
         return -1;
     }
 
-    // First pin of bank 2 is a button input, the remaining pins are LED outputs
-    gpio_pin_configure(keypad_drv_handler.pcf[PCF_LED_BANK_1], 0, GPIO_INPUT | GPIO_PULL_UP);
+    for (int i = 0; i < 4; i++)
+    {
+        gpio_pin_configure(keypad_drv_handler.pcf[PCF_LED_BANK_1], i, GPIO_OUTPUT);
+    }    
 
-    for (int i = 1; i < KEYPAD_DRV_BTN_NUM; i++)
+    // Pin 4 of bank 2 is a button input, the remaining pins are LED outputs
+    gpio_pin_configure(keypad_drv_handler.pcf[PCF_LED_BANK_1], 4, GPIO_INPUT | GPIO_PULL_UP);
+
+    for (int i = 5; i < KEYPAD_DRV_BTN_NUM; i++)
     {
         gpio_pin_configure(keypad_drv_handler.pcf[PCF_LED_BANK_1], i, GPIO_OUTPUT);
     }
