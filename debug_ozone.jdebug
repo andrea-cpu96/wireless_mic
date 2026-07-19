@@ -4,9 +4,9 @@
 *                         www.segger.com                             *
 **********************************************************************
 
-File          : D:/Andrea/Embedded/repositories/wireless_mic/debug_ozone.jdebug
-Created       : 28 Jan 2026 20:59
-Ozone Version : V3.38c
+File          : 
+Created       : 17. Jul 2026 14:41
+Ozone Version : V3.40i
 */
 
 /*********************************************************************
@@ -22,18 +22,17 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("D:/Andrea/Embedded/repositories/wireless_mic", "$(ProjectDir)");
-  Project.AddPathSubstitute ("d:/andrea/embedded/repositories/wireless_mic", "$(ProjectDir)");
   Project.SetDevice ("nRF5340_xxAA_APP");
   Project.SetHostIF ("USB", "69650003");
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
+  Project.AddPathSubstitute ("C:/Andrea/Eng/embedded/repositories/wireless_mic", "$(ProjectDir)");
+  Project.AddPathSubstitute ("c:/andrea/eng/embedded/repositories/wireless_mic", "$(ProjectDir)");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M33F.svd");
-	Project.AddSvdFile ("D:\Andrea\Embedded\repositories\wireless_mic\nrf5340_application.svd");
   //
   // User settings
   //
-  File.Open ("D:\Andrea\Embedded\repositories\wireless_mic\wmic\build_1\wmic\zephyr\zephyr.elf");
+  File.Open ("$(ProjectDir)/wmic/build/wmic/zephyr/zephyr.elf");
 }
 
 /*********************************************************************
