@@ -67,12 +67,12 @@ enum buttons_e keypad_drv_btn_read(void)
 
     gpio_port_get_raw(keypad_drv_handler.pcf[PCF_BTN_BANK_1], &keypad_drv_handler.buttons_state);
 
-    // The first pin of bank 2 is BUTTON_9 (active low, like the other buttons)
+    // The first pin of bank 2 is BUTTON_12 (active low, like the other buttons)
     gpio_port_get_raw(keypad_drv_handler.pcf[PCF_LED_BANK_1], &bank_2_state);
 
-    if ((keypad_drv_handler.buttons_state == BUTTON_NO) && ((bank_2_state & BIT(0)) == 0))
+    if ((keypad_drv_handler.buttons_state == BUTTON_NO) && ((bank_2_state & BIT(4)) == 0))
     {
-        return BUTTON_9;
+        return BUTTON_12;
     }
 
     return (enum buttons_e)keypad_drv_handler.buttons_state;
